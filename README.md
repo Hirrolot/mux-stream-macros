@@ -19,7 +19,7 @@ let stream = stream::iter(vec![
 ]);
 
 demux! {
-    stream of
+    stream ->
         i32_stream of MyEnum::A =>
             assert_eq!(i32_stream.collect::<Vec<i32>>().await, vec![123, 811]),
         f64_stream of MyEnum::B =>

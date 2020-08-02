@@ -17,8 +17,10 @@ pub struct DemuxArm {
 impl Parse for DemuxArm {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let new_stream = input.parse()?;
+
         input.parse::<keywords::of>()?;
         let variant = input.parse()?;
+
         input.parse::<Token![=>]>()?;
         let expr = input.parse::<Expr>()?;
         input.parse::<Token![,]>()?;
@@ -35,7 +37,7 @@ pub struct Demux {
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let stream = input.parse()?;
-        input.parse::<keywords::of>()?;
+        input.parse::<Token![->]>()?;
 
         let mut arms = Vec::new();
 
