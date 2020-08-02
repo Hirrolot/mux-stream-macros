@@ -20,8 +20,11 @@ let stream = stream::iter(vec![
 
 demux! {
     stream of
-        i32_stream of MyEnum::A => assert_eq!(i32_stream.collect::<Vec<i32>>().await, vec![123, 811]),
-        f64_stream of MyEnum::B => assert_eq!(f64_stream.collect::<Vec<f64>>().await, vec![24.241]),
-        str_stream of MyEnum::C => assert_eq!(str_stream.collect::<Vec<&'static str>>().await, vec!["Hello", "ABC"]),
+        i32_stream of MyEnum::A =>
+            assert_eq!(i32_stream.collect::<Vec<i32>>().await, vec![123, 811]),
+        f64_stream of MyEnum::B =>
+            assert_eq!(f64_stream.collect::<Vec<f64>>().await, vec![24.241]),
+        str_stream of MyEnum::C =>
+            assert_eq!(str_stream.collect::<Vec<&'static str>>().await, vec!["Hello", "ABC"]),
 };
 ```
