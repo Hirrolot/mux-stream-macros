@@ -34,12 +34,20 @@ use syn::parse_macro_input;
 ///
 /// demux! {
 ///     stream ->
-///         i32_stream of MyEnum::A =>
-///             assert_eq!(i32_stream.collect::<Vec<i32>>().await, vec![123, 811]),
-///         f64_stream of MyEnum::B =>
-///             assert_eq!(f64_stream.collect::<Vec<f64>>().await, vec![24.241]),
-///         str_stream of MyEnum::C =>
-///             assert_eq!(str_stream.collect::<Vec<&'static str>>().await, vec!["Hello", "ABC"]),
+///         mut i32_stream of MyEnum::A => {
+///             assert_eq!(i32_stream.next().await, Some(123));
+///             assert_eq!(i32_stream.next().await, Some(811));
+///             assert_eq!(i32_stream.next().await, None);
+///         },
+///         mut f64_stream of MyEnum::B => {
+///             assert_eq!(f64_stream.next().await, Some(24.241));
+///             assert_eq!(f64_stream.next().await, None);
+///         },
+///         mut str_stream of MyEnum::C => {
+///             assert_eq!(str_stream.next().await, Some("Hello"));
+///             assert_eq!(str_stream.next().await, Some("ABC"));
+///             assert_eq!(str_stream.next().await, None);
+///         },
 /// };
 /// # }
 /// ```

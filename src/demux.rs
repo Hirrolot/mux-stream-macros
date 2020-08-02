@@ -9,6 +9,7 @@ mod keywords {
 }
 
 pub struct DemuxArm {
+    pub mut_keyword: Option<Token![mut]>,
     pub new_stream: Ident,
     pub variant: Path,
     pub expr: Expr,
@@ -16,6 +17,7 @@ pub struct DemuxArm {
 
 impl Parse for DemuxArm {
     fn parse(input: ParseStream) -> parse::Result<Self> {
+        let mut_keyword = input.parse()?;
         let new_stream = input.parse()?;
 
         input.parse::<keywords::of>()?;
@@ -25,7 +27,7 @@ impl Parse for DemuxArm {
         let expr = input.parse::<Expr>()?;
         input.parse::<Token![,]>()?;
 
-        Ok(Self { new_stream, variant, expr })
+        Ok(Self { mut_keyword, new_stream, variant, expr })
     }
 }
 
@@ -90,12 +92,12 @@ pub mod gen {
     pub fn join(arms: &[DemuxArm]) -> TokenStream {
         let mut expanded = TokenStream::new();
 
-        for (i, DemuxArm { new_stream, expr, .. }) in arms.iter().enumerate() {
+        for (i, DemuxArm { mut_keyword, new_stream, expr, .. }) in arms.iter().enumerate() {
             let rx = format_ident!("rx_{}", i);
 
             expanded.extend(quote! {
                 async move {
-                    let #new_stream = #rx;
+                    let #mut_keyword #new_stream = #rx;
                     #expr
                 },
             });
