@@ -37,6 +37,7 @@ mod tests {
 
     #[test]
     fn demux_panics_on_empty_arms() {
-        trybuild::TestCases::new().compile_fail("tests/demux_panics_on_empty_arms.rs");
+        let t = trybuild::TestCases::new();
+        t.compile_fail("tests/demux/panics_on_empty_arms.rs");
     }
 }
