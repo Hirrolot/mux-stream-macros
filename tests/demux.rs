@@ -44,7 +44,10 @@ mod tests {
     }
 
     #[test]
-    fn demux_panics_on_empty_arms() {
-        trybuild::TestCases::new().compile_fail("tests/demux/fails_on_empty_arms.rs");
+    fn other_tests() {
+        let t = trybuild::TestCases::new();
+
+        t.compile_fail("tests/demux/fails_on_empty_arms.rs");
+        t.compile_fail("tests/demux/fails_on_modifying_immut.rs");
     }
 }
