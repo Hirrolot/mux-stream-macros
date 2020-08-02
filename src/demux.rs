@@ -1,6 +1,7 @@
 use syn::{
     parse,
     parse::{Parse, ParseStream},
+    punctuated::Punctuated,
     Expr, Ident, Path, Token,
 };
 
@@ -25,7 +26,6 @@ impl Parse for DemuxArm {
 
         input.parse::<Token![=>]>()?;
         let expr = input.parse::<Expr>()?;
-        input.parse::<Token![,]>()?;
 
         Ok(Self { mut_keyword, new_stream, variant, expr })
     }
@@ -33,19 +33,14 @@ impl Parse for DemuxArm {
 
 pub struct Demux {
     pub stream: Ident,
-    pub arms: Vec<DemuxArm>,
+    pub arms: Punctuated<DemuxArm, Token![,]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let stream = input.parse()?;
         input.parse::<Token![->]>()?;
-
-        let mut arms = Vec::new();
-
-        while !input.is_empty() {
-            arms.push(input.parse()?);
-        }
+        let arms = Punctuated::parse_terminated(input)?;
 
         Ok(Self { stream, arms })
     }
@@ -74,7 +69,7 @@ pub mod gen {
 
     pub fn dispatch(Demux { stream, arms }: &Demux) -> TokenStream {
         let cloned_senders = cloned_senders(arms.len());
-        let dispatcher_arms = dispatcher_arms(&arms);
+        let dispatcher_arms = dispatcher_arms(arms.iter());
 
         quote! {
             tokio::spawn(futures::StreamExt::for_each(#stream, move |update| {
@@ -89,10 +84,13 @@ pub mod gen {
         }
     }
 
-    pub fn join(arms: &[DemuxArm]) -> TokenStream {
+    pub fn join<'a, I>(arms: I) -> TokenStream
+    where
+        I: Iterator<Item = &'a DemuxArm>,
+    {
         let mut expanded = TokenStream::new();
 
-        for (i, DemuxArm { mut_keyword, new_stream, expr, .. }) in arms.iter().enumerate() {
+        for (i, DemuxArm { mut_keyword, new_stream, expr, .. }) in arms.enumerate() {
             let rx = format_ident!("rx_{}", i);
 
             expanded.extend(quote! {
@@ -120,10 +118,13 @@ pub mod gen {
         expanded
     }
 
-    pub fn dispatcher_arms(arms: &[DemuxArm]) -> TokenStream {
+    pub fn dispatcher_arms<'a, I>(arms: I) -> TokenStream
+    where
+        I: Iterator<Item = &'a DemuxArm>,
+    {
         let mut expanded = TokenStream::new();
 
-        for (i, DemuxArm { variant, .. }) in arms.iter().enumerate() {
+        for (i, DemuxArm { variant, .. }) in arms.enumerate() {
             let tx = format_ident!("tx_{}", i);
 
             expanded.extend(quote! {

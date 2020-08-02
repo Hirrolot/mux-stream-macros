@@ -33,6 +33,6 @@ demux! {
             assert_eq!(str_stream.next().await, Some("Hello"));
             assert_eq!(str_stream.next().await, Some("ABC"));
             assert_eq!(str_stream.next().await, None);
-        },
+        }
 };
 ```

@@ -47,7 +47,7 @@ use syn::parse_macro_input;
 ///             assert_eq!(str_stream.next().await, Some("Hello"));
 ///             assert_eq!(str_stream.next().await, Some("ABC"));
 ///             assert_eq!(str_stream.next().await, None);
-///         },
+///         }
 /// };
 /// # }
 /// ```
@@ -62,7 +62,7 @@ pub fn demux(input: TokenStream) -> TokenStream {
 
     let channels = gen::channels(demux.arms.len());
     let dispatch = gen::dispatch(&demux);
-    let join = gen::join(&demux.arms);
+    let join = gen::join(demux.arms.iter());
 
     let expanded = quote! {
         #channels
