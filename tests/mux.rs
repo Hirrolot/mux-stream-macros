@@ -43,3 +43,10 @@ async fn mux_works() {
     assert_eq!(u8_results, u8_values);
     assert_eq!(str_results, str_values);
 }
+
+#[test]
+fn other_tests() {
+    let t = trybuild::TestCases::new();
+
+    t.compile_fail("tests/mux/fails_on_empty_input_streams.rs");
+}

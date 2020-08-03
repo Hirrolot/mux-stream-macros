@@ -1,3 +1,5 @@
+use mux_stream::demux;
+
 use tokio::stream;
 
 enum MyEnum {
