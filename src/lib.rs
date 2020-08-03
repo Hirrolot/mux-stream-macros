@@ -21,7 +21,7 @@ use syn::parse_macro_input;
 /// Multiplexes several streams into one.
 ///
 /// Grammar:
-/// ```
+/// ```no_compile
 /// mux! {
 ///     input_stream0 of MyEnum::Variant0,
 ///     ...,
@@ -120,7 +120,7 @@ pub fn mux(input: TokenStream) -> TokenStream {
 ///
 /// Grammar:
 ///
-/// ```
+/// ```no_compile
 /// demux! {
 ///     input_stream ->
 ///         [mut] output_stream0 of MyEnum::Variant0 => expr,
