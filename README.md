@@ -8,6 +8,8 @@ This library provides macros for (de)multiplexing Rusty streams.
 
 ## Demultiplexing
 
+You can think of demultiplexing as of `match` on streams:
+
 ```rust
 use mux_stream::demux;
 
@@ -49,6 +51,8 @@ demux! {
 ```
 
 ## Multiplexing
+
+Multiplexing gathers updates from several streams into one in an orderless manner:
 
 ```rust
 use mux_stream::mux;
