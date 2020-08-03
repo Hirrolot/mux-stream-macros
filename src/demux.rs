@@ -1,13 +1,11 @@
+use super::keywords;
+
 use syn::{
     parse,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     Expr, Ident, Path, Token,
 };
-
-mod keywords {
-    syn::custom_keyword!(of);
-}
 
 pub struct DemuxArm {
     pub mut_keyword: Option<Token![mut]>,
@@ -101,10 +99,10 @@ pub mod gen {
             });
         }
 
-        quote! { tokio::join!(#expanded) }
+        quote! { tokio::join!(#expanded); }
     }
 
-    pub fn cloned_senders(count: usize) -> TokenStream {
+    fn cloned_senders(count: usize) -> TokenStream {
         let mut expanded = TokenStream::new();
 
         for i in 0..count {
@@ -118,7 +116,7 @@ pub mod gen {
         expanded
     }
 
-    pub fn dispatcher_arms<'a, I>(arms: I) -> TokenStream
+    fn dispatcher_arms<'a, I>(arms: I) -> TokenStream
     where
         I: Iterator<Item = &'a DemuxArm>,
     {
