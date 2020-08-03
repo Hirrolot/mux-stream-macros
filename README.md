@@ -1,5 +1,7 @@
 # mux-stream
 [![Continious integration](https://github.com/Hirrolot/mux-stream/workflows/Rust/badge.svg)](https://github.com/Hirrolot/mux-stream/actions)
+[![Crates.io](https://img.shields.io/badge/crates.io-v0.1.0-orange.svg)](https://crates.io/crates/mux-stream)
+[![Docs.rs](https://img.shields.io/badge/docs.rs-v0.1.0-blue.svg)](https://docs.rs/mux-stream)
 
 This library provides macros for (de)multiplexing Rusty streams.
 
