@@ -1,3 +1,10 @@
+//! This library provides macros for (de)multiplexing Rusty streams.
+//!
+//!  - Multiplexing: `Stream<A>, Stream<B>, Stream<C>` -> `Stream<A | B | C>`
+//!  - Demultiplexing: `Stream<A | B | C>` -> `Stream<A>, Stream<B>, Stream<C>`
+//!
+//! See [our GitHub repository](https://github.com/Hirrolot/mux-stream) for a high-level overview.
+
 #![deny(unsafe_code)]
 
 mod demux;
@@ -12,6 +19,27 @@ use quote::quote;
 use syn::parse_macro_input;
 
 /// Multiplexes several streams into one.
+///
+/// Grammar:
+/// ```
+/// mux! {
+///     input_stream0 of MyEnum::Variant0,
+///     ...,
+///     input_streamN of MyEnum::VariantN [,]
+/// }
+/// ```
+///
+/// Ith `input_stream` must implement [`Stream<T>`], where `T` is a type of a
+/// single argument of ith `MyEnum::Variant`. Returns
+/// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
+///
+/// Updates into the result stream may come in any order, simultaneously from
+/// all the provided input streams.
+///
+/// This macro can be invoked with or without a trailing comma. At least one
+/// input stream must be provided.
+///
+/// All the provided input streams will be moved.
 ///
 /// ```
 /// use mux_stream::mux;
@@ -61,6 +89,9 @@ use syn::parse_macro_input;
 /// assert_eq!(str_results, str_values);
 /// # }
 /// ```
+///
+/// [`Stream<T>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
+/// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 #[proc_macro]
 pub fn mux(input: TokenStream) -> TokenStream {
     let mux = parse_macro_input!(input as Mux);
@@ -86,6 +117,29 @@ pub fn mux(input: TokenStream) -> TokenStream {
 }
 
 /// Demultiplexes a stream into several others.
+///
+/// Grammar:
+///
+/// ```
+/// demux! {
+///     input_stream ->
+///         [mut] output_stream0 of MyEnum::Variant0 => expr,
+///         ...
+///         [mut] output_streamN of MyEnum::VariantN => expr [,]
+/// }
+/// ```
+///
+/// Ith `output_stream` is of type [`tokio::sync::mpsc::UnboundedReceiver<T>`],
+/// where `T` is a type of a single argument of ith `MyEnum::Variant`.
+/// `input_stream` must implement [`Stream<MyEnum>`].
+///
+/// Each coming update from `input_stream` will be pushed into the corresponding
+/// output stream immediately.
+///
+/// This macro can be invoked with or without a trailing comma. At least one arm
+/// must be provided.
+///
+/// `input_stream` will be moved.
 ///
 /// ```
 /// use mux_stream::demux;
@@ -129,6 +183,9 @@ pub fn mux(input: TokenStream) -> TokenStream {
 /// }
 /// # }
 /// ```
+///
+/// [`Stream<MyEnum>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
+/// [`tokio::sync::mpsc::UnboundedReceiver<T>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 #[proc_macro]
 pub fn demux(input: TokenStream) -> TokenStream {
     let demux = parse_macro_input!(input as Demux);

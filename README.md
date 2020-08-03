@@ -1,3 +1,11 @@
+# mux-stream
+[![Continious integration](https://github.com/Hirrolot/mux-stream/workflows/Rust/badge.svg)](https://github.com/Hirrolot/mux-stream/actions)
+
+This library provides macros for (de)multiplexing Rusty streams.
+
+ - Multiplexing: `Stream<A>, Stream<B>, Stream<C>` -> `Stream<A | B | C>`
+ - Demultiplexing: `Stream<A | B | C>` -> `Stream<A>, Stream<B>, Stream<C>`
+
 ## Demultiplexing
 
 ```rust
