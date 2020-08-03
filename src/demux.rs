@@ -47,14 +47,14 @@ impl Parse for Demux {
 pub mod gen {
     use crate::demux::{Demux, DemuxArm};
     use proc_macro2::TokenStream;
-    use quote::{format_ident, quote};
+    use quote::quote;
 
     pub fn channels(count: usize) -> TokenStream {
         let mut expanded = TokenStream::new();
 
         for i in 0..count {
-            let tx = format_ident!("tx_{}", i);
-            let rx = format_ident!("rx_{}", i);
+            let tx = crate::ith_ident("tx", i);
+            let rx = crate::ith_ident("rx", i);
 
             expanded.extend(quote! {
                 let (#tx, #rx) = tokio::sync::mpsc::unbounded_channel();
@@ -89,7 +89,7 @@ pub mod gen {
         let mut expanded = TokenStream::new();
 
         for (i, DemuxArm { mut_keyword, new_stream, expr, .. }) in arms.enumerate() {
-            let rx = format_ident!("rx_{}", i);
+            let rx = crate::ith_ident("rx", i);
 
             expanded.extend(quote! {
                 async move {
@@ -106,7 +106,7 @@ pub mod gen {
         let mut expanded = TokenStream::new();
 
         for i in 0..count {
-            let tx = format_ident!("tx_{}", i);
+            let tx = crate::ith_ident("tx", i);
 
             expanded.extend(quote! {
                 let #tx = std::sync::Arc::clone(&#tx);
@@ -123,7 +123,7 @@ pub mod gen {
         let mut expanded = TokenStream::new();
 
         for (i, DemuxArm { variant, .. }) in arms.enumerate() {
-            let tx = format_ident!("tx_{}", i);
+            let tx = crate::ith_ident("tx", i);
 
             expanded.extend(quote! {
                 #variant (update) => #tx.send(update).expect("RX has been either dropped or closed"),

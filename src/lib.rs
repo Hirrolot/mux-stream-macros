@@ -8,10 +8,12 @@
 #![deny(unsafe_code)]
 
 mod demux;
+mod ith_ident;
 mod keywords;
 mod mux;
 
 use demux::Demux;
+use ith_ident::ith_ident;
 use mux::Mux;
 
 use proc_macro::TokenStream;

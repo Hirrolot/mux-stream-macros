@@ -35,7 +35,7 @@ impl Parse for Mux {
 pub mod gen {
     use crate::mux::{Mux, MuxInputStream};
     use proc_macro2::TokenStream;
-    use quote::{format_ident, quote};
+    use quote::quote;
 
     pub fn move_input_streams<'a, I>(arms: I) -> TokenStream
     where
@@ -44,7 +44,7 @@ pub mod gen {
         let mut expanded = TokenStream::new();
 
         for (i, MuxInputStream { stream, .. }) in arms.enumerate() {
-            let input_stream = format_ident!("input_stream_{}", i);
+            let input_stream = crate::ith_ident("input_stream", i);
 
             expanded.extend(quote! {
                 let #input_stream = #stream;
@@ -61,7 +61,7 @@ pub mod gen {
         };
 
         for i in 1..count {
-            let tx = format_ident!("tx_{}", i);
+            let tx = crate::ith_ident("tx", i);
 
             expanded.extend(quote! {
                 let #tx = std::sync::Arc::new(std::clone::Clone::clone(&tx_0));
@@ -88,8 +88,8 @@ pub mod gen {
         let mut expanded = TokenStream::new();
 
         for (i, MuxInputStream { destination_variant, .. }) in arms.enumerate() {
-            let tx = format_ident!("tx_{}", i);
-            let input_stream = format_ident!("input_stream_{}", i);
+            let tx = crate::ith_ident("tx", i);
+            let input_stream = crate::ith_ident("input_stream", i);
 
             expanded.extend(quote! {
                 async move {
