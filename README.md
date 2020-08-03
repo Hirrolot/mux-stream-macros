@@ -42,7 +42,7 @@ demux! {
 
 ## Multiplexing
 
-```
+```rust
 use mux_stream::mux;
 
 use std::{collections::HashSet, iter::FromIterator};
