@@ -34,7 +34,7 @@ let stream = stream::iter(vec![
 ]);
 
 demux! {
-    stream ->
+    stream =>
         mut i32_stream of MyEnum::A => {
             assert_eq!(i32_stream.next().await, Some(123));
             assert_eq!(i32_stream.next().await, Some(811));

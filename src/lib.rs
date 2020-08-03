@@ -124,7 +124,7 @@ pub fn mux(input: TokenStream) -> TokenStream {
 ///
 /// ```no_compile
 /// demux! {
-///     input_stream ->
+///     input_stream =>
 ///         [mut] output_stream0 of MyEnum::Variant0 => expr,
 ///         ...
 ///         [mut] output_streamN of MyEnum::VariantN => expr [,]
@@ -167,7 +167,7 @@ pub fn mux(input: TokenStream) -> TokenStream {
 /// ]);
 ///
 /// demux! {
-///     stream ->
+///     stream =>
 ///         mut i32_stream of MyEnum::A => {
 ///             assert_eq!(i32_stream.next().await, Some(123));
 ///             assert_eq!(i32_stream.next().await, Some(811));
@@ -197,12 +197,14 @@ pub fn demux(input: TokenStream) -> TokenStream {
         return expected.into();
     }
 
+    let moved_input_stream = demux::gen::move_input_stream(&demux.stream);
     let channels = demux::gen::channels(demux.arms.len());
     let dispatch = demux::gen::dispatch(&demux);
     let join = demux::gen::join(demux.arms.iter());
 
     let expanded = quote! {
         {
+            #moved_input_stream
             #channels
             #dispatch
             #join

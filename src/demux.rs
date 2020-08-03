@@ -30,14 +30,14 @@ impl Parse for DemuxArm {
 }
 
 pub struct Demux {
-    pub stream: Ident,
+    pub stream: Expr,
     pub arms: Punctuated<DemuxArm, Token![,]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let stream = input.parse()?;
-        input.parse::<Token![->]>()?;
+        input.parse::<Token![=>]>()?;
         let arms = Punctuated::parse_terminated(input)?;
 
         Ok(Self { stream, arms })
@@ -48,6 +48,13 @@ pub mod gen {
     use crate::demux::{Demux, DemuxArm};
     use proc_macro2::TokenStream;
     use quote::quote;
+    use syn::Expr;
+
+    pub fn move_input_stream(stream: &Expr) -> TokenStream {
+        quote! {
+            let input_stream = #stream;
+        }
+    }
 
     pub fn channels(count: usize) -> TokenStream {
         let mut expanded = TokenStream::new();
@@ -65,12 +72,12 @@ pub mod gen {
         expanded
     }
 
-    pub fn dispatch(Demux { stream, arms }: &Demux) -> TokenStream {
+    pub fn dispatch(Demux { arms, .. }: &Demux) -> TokenStream {
         let cloned_senders = cloned_senders(arms.len());
         let dispatcher_arms = dispatcher_arms(arms.iter());
 
         quote! {
-            tokio::spawn(futures::StreamExt::for_each(#stream, move |update| {
+            tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
                 #cloned_senders
 
                 async move {
