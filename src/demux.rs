@@ -3,6 +3,7 @@ use super::keywords;
 use syn::{
     parse,
     parse::{Parse, ParseStream},
+    parse_macro_input,
     punctuated::Punctuated,
     Expr, Ident, Path, Token,
 };
@@ -30,113 +31,122 @@ impl Parse for DemuxArm {
 }
 
 pub struct Demux {
-    pub stream: Expr,
     pub arms: Punctuated<DemuxArm, Token![,]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
-        let stream = input.parse()?;
-        input.parse::<Token![=>]>()?;
         let arms = Punctuated::parse_terminated(input)?;
 
-        Ok(Self { stream, arms })
+        Ok(Self { arms })
     }
 }
 
-pub mod gen {
-    use crate::demux::{Demux, DemuxArm};
-    use proc_macro2::TokenStream;
-    use quote::quote;
-    use syn::Expr;
+use proc_macro2::TokenStream;
+use quote::quote;
 
-    pub fn move_input_stream(stream: &Expr) -> TokenStream {
-        quote! {
-            let input_stream = #stream;
-        }
+pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let demux = parse_macro_input!(input as Demux);
+
+    if demux.arms.is_empty() {
+        let expected = quote! { compile_error!("At least one arm is required") };
+        return expected.into();
     }
 
-    pub fn channels(count: usize) -> TokenStream {
-        let mut expanded = TokenStream::new();
+    let channels = channels(demux.arms.len());
+    let dispatch = dispatch(&demux);
+    let join = join(demux.arms.iter());
 
-        for i in 0..count {
-            let tx = crate::ith_ident("tx", i);
-            let rx = crate::ith_ident("rx", i);
-
-            expanded.extend(quote! {
-                let (#tx, #rx) = tokio::sync::mpsc::unbounded_channel();
-                let #tx = std::sync::Arc::new(#tx);
-            });
+    let expanded = quote! {
+        |input_stream| async move {
+            #channels
+            #dispatch
+            #join
         }
+    };
+    expanded.into()
+}
 
-        expanded
+fn channels(count: usize) -> TokenStream {
+    let mut expanded = TokenStream::new();
+
+    for i in 0..count {
+        let tx = crate::ith_ident("tx", i);
+        let rx = crate::ith_ident("rx", i);
+
+        expanded.extend(quote! {
+            let (#tx, #rx) = tokio::sync::mpsc::unbounded_channel();
+            let #tx = std::sync::Arc::new(#tx);
+        });
     }
 
-    pub fn dispatch(Demux { arms, .. }: &Demux) -> TokenStream {
-        let cloned_senders = cloned_senders(arms.len());
-        let dispatcher_arms = dispatcher_arms(arms.iter());
+    expanded
+}
 
-        quote! {
-            tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
-                #cloned_senders
+fn dispatch(Demux { arms, .. }: &Demux) -> TokenStream {
+    let cloned_senders = cloned_senders(arms.len());
+    let dispatcher_arms = dispatcher_arms(arms.iter());
 
-                async move {
-                    match update {
-                        #dispatcher_arms
-                    }
+    quote! {
+        tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
+            #cloned_senders
+
+            async move {
+                match update {
+                    #dispatcher_arms
                 }
-            }));
-        }
+            }
+        }));
+    }
+}
+
+fn join<'a, I>(arms: I) -> TokenStream
+where
+    I: Iterator<Item = &'a DemuxArm>,
+{
+    let mut expanded = TokenStream::new();
+
+    for (i, DemuxArm { mut_keyword, new_stream, expr, .. }) in arms.enumerate() {
+        let rx = crate::ith_ident("rx", i);
+
+        expanded.extend(quote! {
+            async move {
+                let #mut_keyword #new_stream = #rx;
+                #expr
+            },
+        });
     }
 
-    pub fn join<'a, I>(arms: I) -> TokenStream
-    where
-        I: Iterator<Item = &'a DemuxArm>,
-    {
-        let mut expanded = TokenStream::new();
+    quote! { tokio::join!(#expanded); }
+}
 
-        for (i, DemuxArm { mut_keyword, new_stream, expr, .. }) in arms.enumerate() {
-            let rx = crate::ith_ident("rx", i);
+fn cloned_senders(count: usize) -> TokenStream {
+    let mut expanded = TokenStream::new();
 
-            expanded.extend(quote! {
-                async move {
-                    let #mut_keyword #new_stream = #rx;
-                    #expr
-                },
-            });
-        }
+    for i in 0..count {
+        let tx = crate::ith_ident("tx", i);
 
-        quote! { tokio::join!(#expanded); }
+        expanded.extend(quote! {
+            let #tx = std::sync::Arc::clone(&#tx);
+        });
     }
 
-    fn cloned_senders(count: usize) -> TokenStream {
-        let mut expanded = TokenStream::new();
+    expanded
+}
 
-        for i in 0..count {
-            let tx = crate::ith_ident("tx", i);
+fn dispatcher_arms<'a, I>(arms: I) -> TokenStream
+where
+    I: Iterator<Item = &'a DemuxArm>,
+{
+    let mut expanded = TokenStream::new();
 
-            expanded.extend(quote! {
-                let #tx = std::sync::Arc::clone(&#tx);
-            });
-        }
+    for (i, DemuxArm { variant, .. }) in arms.enumerate() {
+        let tx = crate::ith_ident("tx", i);
 
-        expanded
+        expanded.extend(quote! {
+            #variant (update) => #tx.send(update).expect("RX has been either dropped or closed"),
+        });
     }
 
-    fn dispatcher_arms<'a, I>(arms: I) -> TokenStream
-    where
-        I: Iterator<Item = &'a DemuxArm>,
-    {
-        let mut expanded = TokenStream::new();
-
-        for (i, DemuxArm { variant, .. }) in arms.enumerate() {
-            let tx = crate::ith_ident("tx", i);
-
-            expanded.extend(quote! {
-                #variant (update) => #tx.send(update).expect("RX has been either dropped or closed"),
-            });
-        }
-
-        expanded
-    }
+    expanded
 }

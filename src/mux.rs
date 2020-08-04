@@ -2,6 +2,7 @@ use super::keywords;
 
 use syn::{
     parse::{self, Parse, ParseStream},
+    parse_macro_input,
     punctuated::Punctuated,
     Expr, Path, Token,
 };
@@ -32,66 +33,87 @@ impl Parse for Mux {
     }
 }
 
-pub mod gen {
-    use crate::mux::{Mux, MuxInputStream};
-    use proc_macro2::TokenStream;
-    use quote::quote;
+use proc_macro2::TokenStream;
+use quote::quote;
 
-    pub fn move_input_streams<'a, I>(arms: I) -> TokenStream
-    where
-        I: Iterator<Item = &'a MuxInputStream>,
-    {
-        let mut expanded = TokenStream::new();
+pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let mux = parse_macro_input!(input as Mux);
 
-        for (i, MuxInputStream { stream, .. }) in arms.enumerate() {
-            let input_stream = crate::ith_ident("input_stream", i);
-
-            expanded.extend(quote! {
-                let #input_stream = #stream;
-            });
-        }
-
-        expanded
+    if mux.input_streams.is_empty() {
+        let expected = quote! { compile_error!("At least one input stream is required") };
+        return expected.into();
     }
 
-    pub fn channels(count: usize) -> TokenStream {
-        let mut expanded = quote! {
-            let (tx_0, rx) = tokio::sync::mpsc::unbounded_channel();
-            let tx_0 = std::sync::Arc::new(tx_0);
-        };
+    let moved_input_streams = move_input_streams(mux.input_streams.iter());
+    let channels = channels(mux.input_streams.len());
+    let dispatch = dispatch(&mux);
 
-        for i in 1..count {
-            let tx = crate::ith_ident("tx", i);
-
-            expanded.extend(quote! {
-                let #tx = std::sync::Arc::new(std::clone::Clone::clone(&tx_0));
-            });
+    let expanded = quote! {
+        {
+            #moved_input_streams
+            #channels
+            #dispatch
+            rx
         }
+    };
+    expanded.into()
+}
 
-        expanded
+fn move_input_streams<'a, I>(arms: I) -> TokenStream
+where
+    I: Iterator<Item = &'a MuxInputStream>,
+{
+    let mut expanded = TokenStream::new();
+
+    for (i, MuxInputStream { stream, .. }) in arms.enumerate() {
+        let input_stream = crate::ith_ident("input_stream", i);
+
+        expanded.extend(quote! {
+            let #input_stream = #stream;
+        });
     }
 
-    pub fn dispatch(Mux { input_streams }: &Mux) -> TokenStream {
-        let redirections = redirections(input_streams.iter());
+    expanded
+}
 
-        quote! {
-            tokio::spawn(async move {
-                tokio::join!(#redirections);
-            });
-        }
+fn channels(count: usize) -> TokenStream {
+    let mut expanded = quote! {
+        let (tx_0, rx) = tokio::sync::mpsc::unbounded_channel();
+        let tx_0 = std::sync::Arc::new(tx_0);
+    };
+
+    for i in 1..count {
+        let tx = crate::ith_ident("tx", i);
+
+        expanded.extend(quote! {
+            let #tx = std::sync::Arc::new(std::clone::Clone::clone(&tx_0));
+        });
     }
 
-    fn redirections<'a, I>(arms: I) -> TokenStream
-    where
-        I: Iterator<Item = &'a MuxInputStream>,
-    {
-        let mut expanded = TokenStream::new();
+    expanded
+}
 
-        for (i, MuxInputStream { destination_variant, .. }) in arms.enumerate() {
-            let tx = crate::ith_ident("tx", i);
-            let input_stream = crate::ith_ident("input_stream", i);
+fn dispatch(Mux { input_streams }: &Mux) -> TokenStream {
+    let redirections = redirections(input_streams.iter());
 
-            expanded.extend(quote! {
+    quote! {
+        tokio::spawn(async move {
+            tokio::join!(#redirections);
+        });
+    }
+}
+
+fn redirections<'a, I>(arms: I) -> TokenStream
+where
+    I: Iterator<Item = &'a MuxInputStream>,
+{
+    let mut expanded = TokenStream::new();
+
+    for (i, MuxInputStream { destination_variant, .. }) in arms.enumerate() {
+        let tx = crate::ith_ident("tx", i);
+        let input_stream = crate::ith_ident("input_stream", i);
+
+        expanded.extend(quote! {
                 async move {
                     futures::StreamExt::for_each(#input_stream, move |update| {
                         let #tx = std::sync::Arc::clone(&#tx);
@@ -102,8 +124,7 @@ pub mod gen {
                     }).await;
                 },
             });
-        }
-
-        expanded
     }
+
+    expanded
 }

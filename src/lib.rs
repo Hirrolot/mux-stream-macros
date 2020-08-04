@@ -12,13 +12,9 @@ mod ith_ident;
 mod keywords;
 mod mux;
 
-use demux::Demux;
 use ith_ident::ith_ident;
-use mux::Mux;
 
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::parse_macro_input;
 
 /// Multiplexes several streams into one.
 ///
@@ -96,26 +92,7 @@ use syn::parse_macro_input;
 /// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 #[proc_macro]
 pub fn mux(input: TokenStream) -> TokenStream {
-    let mux = parse_macro_input!(input as Mux);
-
-    if mux.input_streams.is_empty() {
-        let expected = quote! { compile_error!("At least one input stream is required") };
-        return expected.into();
-    }
-
-    let moved_input_streams = mux::gen::move_input_streams(mux.input_streams.iter());
-    let channels = mux::gen::channels(mux.input_streams.len());
-    let dispatch = mux::gen::dispatch(&mux);
-
-    let expanded = quote! {
-        {
-            #moved_input_streams
-            #channels
-            #dispatch
-            rx
-        }
-    };
-    expanded.into()
+    mux::gen(input)
 }
 
 /// Demultiplexes a stream into several others.
@@ -123,25 +100,23 @@ pub fn mux(input: TokenStream) -> TokenStream {
 /// Grammar:
 ///
 /// ```no_compile
-/// demux! {
-///     input_stream =>
-///         [mut] output_stream0 of MyEnum::Variant0 => expr,
-///         ...
-///         [mut] output_streamN of MyEnum::VariantN => expr [,]
-/// }
+/// demux!(
+///     [mut] output_stream0 of MyEnum::Variant0 => expr,
+///     ...
+///     [mut] output_streamN of MyEnum::VariantN => expr [,]
+/// )
 /// ```
 ///
 /// Ith `output_stream` is of type [`tokio::sync::mpsc::UnboundedReceiver<T>`],
 /// where `T` is a type of a single argument of ith `MyEnum::Variant`.
-/// `input_stream` must implement [`Stream<MyEnum>`].
+/// This macro expands to a closure of a single parameter `input_stream`, which
+/// must implement [`Stream<MyEnum>`].
 ///
 /// Each coming update from `input_stream` will be pushed into the corresponding
 /// output stream immediately.
 ///
 /// This macro can be invoked with or without a trailing comma. At least one arm
 /// must be provided.
-///
-/// `input_stream` will be moved.
 ///
 /// ```
 /// use mux_stream::demux;
@@ -166,23 +141,22 @@ pub fn mux(input: TokenStream) -> TokenStream {
 ///     MyEnum::A(811),
 /// ]);
 ///
-/// demux! {
-///     stream =>
-///         mut i32_stream of MyEnum::A => {
-///             assert_eq!(i32_stream.next().await, Some(123));
-///             assert_eq!(i32_stream.next().await, Some(811));
-///             assert_eq!(i32_stream.next().await, None);
-///         },
-///         mut f64_stream of MyEnum::B => {
-///             assert_eq!(f64_stream.next().await, Some(24.241));
-///             assert_eq!(f64_stream.next().await, None);
-///         },
-///         mut str_stream of MyEnum::C => {
-///             assert_eq!(str_stream.next().await, Some("Hello"));
-///             assert_eq!(str_stream.next().await, Some("ABC"));
-///             assert_eq!(str_stream.next().await, None);
-///         }
-/// }
+/// demux!(
+///     mut i32_stream of MyEnum::A => {
+///         assert_eq!(i32_stream.next().await, Some(123));
+///         assert_eq!(i32_stream.next().await, Some(811));
+///         assert_eq!(i32_stream.next().await, None);
+///     },
+///     mut f64_stream of MyEnum::B => {
+///         assert_eq!(f64_stream.next().await, Some(24.241));
+///         assert_eq!(f64_stream.next().await, None);
+///     },
+///     mut str_stream of MyEnum::C => {
+///         assert_eq!(str_stream.next().await, Some("Hello"));
+///         assert_eq!(str_stream.next().await, Some("ABC"));
+///         assert_eq!(str_stream.next().await, None);
+///     }
+/// )(stream);
 /// # }
 /// ```
 ///
@@ -190,25 +164,5 @@ pub fn mux(input: TokenStream) -> TokenStream {
 /// [`tokio::sync::mpsc::UnboundedReceiver<T>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 #[proc_macro]
 pub fn demux(input: TokenStream) -> TokenStream {
-    let demux = parse_macro_input!(input as Demux);
-
-    if demux.arms.is_empty() {
-        let expected = quote! { compile_error!("At least one arm is required") };
-        return expected.into();
-    }
-
-    let moved_input_stream = demux::gen::move_input_stream(&demux.stream);
-    let channels = demux::gen::channels(demux.arms.len());
-    let dispatch = demux::gen::dispatch(&demux);
-    let join = demux::gen::join(demux.arms.iter());
-
-    let expanded = quote! {
-        {
-            #moved_input_stream
-            #channels
-            #dispatch
-            #join
-        }
-    };
-    expanded.into()
+    demux::gen(input)
 }
