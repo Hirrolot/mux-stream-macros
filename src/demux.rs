@@ -8,7 +8,7 @@ use syn::{
     Expr, Ident, Path, Token,
 };
 
-pub struct DemuxArm {
+struct DemuxArm {
     pub mut_keyword: Option<Token![mut]>,
     pub new_stream: Ident,
     pub variant: Path,
@@ -30,7 +30,7 @@ impl Parse for DemuxArm {
     }
 }
 
-pub struct Demux {
+struct Demux {
     pub arms: Punctuated<DemuxArm, Token![,]>,
 }
 
@@ -46,6 +46,15 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = proc_macro2::TokenStream::from(input);
+
+    let expanded = quote! {mux_stream::demux_with_error_handler!(#input)(|_error| async {
+        panic!("RX has been either dropped or closed");
+    })};
+    expanded.into()
+}
+
+pub fn gen_with_error_handler(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let demux = parse_macro_input!(input as Demux);
 
     if demux.arms.is_empty() {
@@ -58,10 +67,12 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let join = join(demux.arms.iter());
 
     let expanded = quote! {
-        |input_stream| async move {
-            #channels
-            #dispatch
-            #join
+        |error_handler| {
+            |input_stream| async move {
+                #channels
+                #dispatch
+                #join
+            }
         }
     };
     expanded.into()
@@ -144,7 +155,9 @@ where
         let tx = crate::ith_ident("tx", i);
 
         expanded.extend(quote! {
-            #variant (update) => #tx.send(update).expect("RX has been either dropped or closed"),
+            #variant (update) => if let Err(error) = #tx.send(update) {
+                error_handler(error).await;
+            },
         });
     }
 

@@ -7,35 +7,36 @@
 
 #![deny(unsafe_code)]
 
+mod common;
 mod demux;
-mod ith_ident;
-mod keywords;
 mod mux;
 
-use ith_ident::ith_ident;
+use common::{ith_ident, keywords};
 
 use proc_macro::TokenStream;
 
 /// Multiplexes several streams into one.
 ///
-/// Grammar:
+/// # Grammar
+///
 /// ```no_compile
-/// mux! {
-///     input_stream0 of MyEnum::Variant0,
-///     ...,
-///     input_streamN of MyEnum::VariantN [,]
-/// }
+/// input_stream0 of MyEnum::Variant0,
+/// ...,
+/// input_streamN of MyEnum::VariantN [,]
 /// ```
 ///
-/// Ith `input_stream` must implement [`Stream<T>`], where `T` is a type of a
-/// single argument of ith `MyEnum::Variant`. Returns
-/// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
+/// # Constraints
+///
+///  - Ith `input_stream` shall implement [`Stream<T>`], where `T` is a type of
+///    a single argument of ith `MyEnum::Variant`.
+///  - At least one input stream shall be provided.
+///  - This macro can be invoked with or without a trailing comma.
+///
+/// # Semantics
+/// Returns [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
 ///
 /// Updates into the result stream may come in any order, simultaneously from
 /// all the provided input streams.
-///
-/// This macro can be invoked with or without a trailing comma. At least one
-/// input stream must be provided.
 ///
 /// All the provided input streams will be moved.
 ///
@@ -95,28 +96,12 @@ pub fn mux(input: TokenStream) -> TokenStream {
     mux::gen(input)
 }
 
-/// Demultiplexes a stream into several others.
+/// Demultiplexer with a panicking error handler.
 ///
-/// Grammar:
+/// Expands to `demux_with_error_handler!(...)(|error| async move { /*
+/// panic!(...) */ })`.
 ///
-/// ```no_compile
-/// demux!(
-///     [mut] output_stream0 of MyEnum::Variant0 => expr,
-///     ...
-///     [mut] output_streamN of MyEnum::VariantN => expr [,]
-/// )
-/// ```
-///
-/// Ith `output_stream` is of type [`tokio::sync::mpsc::UnboundedReceiver<T>`],
-/// where `T` is a type of a single argument of ith `MyEnum::Variant`.
-/// This macro expands to a closure of a single parameter `input_stream`, which
-/// must implement [`Stream<MyEnum>`].
-///
-/// Each coming update from `input_stream` will be pushed into the corresponding
-/// output stream immediately.
-///
-/// This macro can be invoked with or without a trailing comma. At least one arm
-/// must be provided.
+/// # Example
 ///
 /// ```
 /// use mux_stream::demux;
@@ -156,13 +141,98 @@ pub fn mux(input: TokenStream) -> TokenStream {
 ///         assert_eq!(str_stream.next().await, Some("ABC"));
 ///         assert_eq!(str_stream.next().await, None);
 ///     }
-/// )(stream);
+/// )(stream).await;
 /// # }
 /// ```
-///
-/// [`Stream<MyEnum>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
-/// [`tokio::sync::mpsc::UnboundedReceiver<T>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 #[proc_macro]
 pub fn demux(input: TokenStream) -> TokenStream {
     demux::gen(input)
+}
+
+/// Demultiplexes a stream into several others with a custom error handler.
+///
+/// # Grammar
+///
+/// ```no_compile
+/// [mut] output_stream0 of MyEnum::Variant0 => expr0,
+/// ...
+/// [mut] output_streamN of MyEnum::VariantN => exprN [,]
+/// ```
+///
+/// # Contraints
+///
+///  - Ith `output_stream` is of type
+///    [`tokio::sync::mpsc::UnboundedReceiver<T>`], where `T` is a type of a
+///    single argument of ith `MyEnum::Variant`.
+///  - `MyEnum::Variant0`, ..., `MyEnum::VariantN` shall be defined as variants
+///    taking a single unnamed argument.
+///  - `expr0`, ..., `exprN` shall be expressions of the same type.
+///  - At least one arm shall be provided.
+///  - This macro can be invoked with or without a trailing comma.
+///
+/// # Semantics
+/// This macro expands to a closure of a single parameter `error_handler`, which
+/// return a closure of a single parameter `input_stream` (implementing
+/// [`Stream<MyEnum>`]), which returns a future of a type of `expr0`, ...,
+/// `exprN`. Thus, the returned closure is [curried].
+///
+/// Each coming update from `input_stream` will be pushed into the corresponding
+/// output stream immediately.
+///
+/// `error_handler` is a closure, which returns `F: Future<Output = ()>` and
+/// takes [`SendError<MyEnum>`]. It is invoked when a demultiplexer fails to
+/// send an update from an input stream into one of receivers.
+///
+/// # Example
+/// ```
+/// use mux_stream::demux_with_error_handler;
+///
+/// use futures::StreamExt;
+/// use tokio::stream;
+///
+/// #[derive(Debug)]
+/// enum MyEnum {
+///     A(i32),
+///     B(f64),
+///     C(&'static str),
+/// }
+///
+/// # #[tokio::main]
+/// # async fn main_() {
+/// let stream = stream::iter(vec![
+///     MyEnum::A(123),
+///     MyEnum::B(24.241),
+///     MyEnum::C("Hello"),
+///     MyEnum::C("ABC"),
+///     MyEnum::A(811),
+/// ]);
+///
+/// demux_with_error_handler!(
+///     mut i32_stream of MyEnum::A => {
+///         assert_eq!(i32_stream.next().await, Some(123));
+///         assert_eq!(i32_stream.next().await, Some(811));
+///         assert_eq!(i32_stream.next().await, None);
+///     },
+///     mut f64_stream of MyEnum::B => {
+///         assert_eq!(f64_stream.next().await, Some(24.241));
+///         assert_eq!(f64_stream.next().await, None);
+///     },
+///     mut str_stream of MyEnum::C => {
+///         assert_eq!(str_stream.next().await, Some("Hello"));
+///         assert_eq!(str_stream.next().await, Some("ABC"));
+///         assert_eq!(str_stream.next().await, None);
+///     }
+/// )(|error| async move {
+///     dbg!(error);
+/// })(stream).await;
+/// # }
+/// ```
+///
+/// [curried]: https://en.wikipedia.org/wiki/Currying
+/// [`Stream<MyEnum>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
+/// [`tokio::sync::mpsc::UnboundedReceiver<T>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
+/// [`SendError<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/error/struct.SendError.html
+#[proc_macro]
+pub fn demux_with_error_handler(input: TokenStream) -> TokenStream {
+    demux::gen_with_error_handler(input)
 }
