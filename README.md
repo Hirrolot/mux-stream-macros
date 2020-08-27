@@ -13,7 +13,7 @@ This library provides macros for (de)multiplexing Rusty streams.
 You can think of demultiplexing as of `match` on streams:
 
 ```rust
-use mux_stream::demux;
+use mux_stream::ui.demux;
 
 use futures::StreamExt;
 use tokio::stream;
@@ -33,7 +33,7 @@ let stream = stream::iter(vec![
     MyEnum::A(811),
 ]);
 
-demux!(
+ui.demux!(
     mut i32_stream of MyEnum::A => {
         assert_eq!(i32_stream.next().await, Some(123));
         assert_eq!(i32_stream.next().await, Some(811));

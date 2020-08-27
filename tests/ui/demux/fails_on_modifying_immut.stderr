@@ -1,0 +1,7 @@
+error[E0596]: cannot borrow `i32_stream` as mutable, as it is not declared as mutable
+  --> $DIR/fails_on_modifying_immut.rs:10:39
+   |
+10 |     demux!(i32_stream of MyEnum::A => i32_stream.next().await);
+   |            ----------                 ^^^^^^^^^^ cannot borrow as mutable
+   |            |
+   |            help: consider changing this to be mutable: `mut i32_stream`

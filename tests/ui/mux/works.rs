@@ -12,8 +12,8 @@ enum MyEnum {
     C(&'static str),
 }
 
-#[tokio::test]
-async fn mux_works() {
+#[tokio::main]
+async fn main() {
     let i32_values = HashSet::from_iter(vec![123, 811]);
     let u8_values = HashSet::from_iter(vec![88]);
     let str_values = HashSet::from_iter(vec!["Hello", "ABC"]);
@@ -42,11 +42,4 @@ async fn mux_works() {
     assert_eq!(i32_results, i32_values);
     assert_eq!(u8_results, u8_values);
     assert_eq!(str_results, str_values);
-}
-
-#[test]
-fn other_tests() {
-    let t = trybuild::TestCases::new();
-
-    t.compile_fail("tests/mux/fails_on_empty_input_streams.rs");
 }

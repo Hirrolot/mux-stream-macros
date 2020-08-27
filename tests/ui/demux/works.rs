@@ -10,8 +10,8 @@ enum MyEnum {
     C(&'static str),
 }
 
-#[tokio::test]
-async fn demux_works() {
+#[tokio::main]
+async fn main() {
     let stream = stream::iter(vec![
         MyEnum::A(123),
         MyEnum::B(24.241),
@@ -36,13 +36,5 @@ async fn demux_works() {
             assert_eq!(str_stream.next().await, None);
         }
     )(stream.boxed())
-    .await;
-}
-
-#[test]
-fn other_tests() {
-    let t = trybuild::TestCases::new();
-
-    t.compile_fail("tests/demux/fails_on_empty_arms.rs");
-    t.compile_fail("tests/demux/fails_on_modifying_immut.rs");
+        .await;
 }

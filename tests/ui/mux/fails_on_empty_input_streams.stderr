@@ -1,0 +1,7 @@
+error: At least one input stream is required
+ --> $DIR/fails_on_empty_input_streams.rs:5:9
+  |
+5 |         mux! { }
+  |         ^^^^^^^^
+  |
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
