@@ -35,7 +35,7 @@ async fn demux_works() {
             assert_eq!(str_stream.next().await, Some("ABC"));
             assert_eq!(str_stream.next().await, None);
         }
-    )(stream)
+    )(stream.boxed())
     .await;
 }
 

@@ -48,9 +48,10 @@ use quote::quote;
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
-    let expanded = quote! {mux_stream::demux_with_error_handler!(#input)(|_error| async {
+    let expanded = quote! {mux_stream::demux_with_error_handler!(#input)
+    (Box::new(|_error| futures::future::FutureExt::boxed(async {
         panic!("RX has been either dropped or closed");
-    })};
+    })))};
     expanded.into()
 }
 
@@ -67,8 +68,9 @@ pub fn gen_with_error_handler(input: proc_macro::TokenStream) -> proc_macro::Tok
     let join = join(demux.arms.iter());
 
     let expanded = quote! {
-        |error_handler| {
-            |input_stream| async move {
+        |error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>) -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
+            |input_stream: futures::stream::BoxStream<'static, _>| async move {
+                let error_handler = std::sync::Arc::new(error_handler);
                 #channels
                 #dispatch
                 #join
@@ -101,6 +103,7 @@ fn dispatch(Demux { arms, .. }: &Demux) -> TokenStream {
     quote! {
         tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
             #cloned_senders
+            let error_handler = std::sync::Arc::clone(&error_handler);
 
             async move {
                 match update {
@@ -156,6 +159,8 @@ where
 
         expanded.extend(quote! {
             #variant (update) => if let Err(error) = #tx.send(update) {
+                let tokio::sync::mpsc::error::SendError(value) = error;
+                let error = tokio::sync::mpsc::error::SendError(#variant (value));
                 error_handler(error).await;
             },
         });

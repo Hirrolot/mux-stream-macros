@@ -141,7 +141,7 @@ pub fn mux(input: TokenStream) -> TokenStream {
 ///         assert_eq!(str_stream.next().await, Some("ABC"));
 ///         assert_eq!(str_stream.next().await, None);
 ///     }
-/// )(stream).await;
+/// )(stream.boxed()).await;
 /// # }
 /// ```
 #[proc_macro]
@@ -188,6 +188,7 @@ pub fn demux(input: TokenStream) -> TokenStream {
 /// use mux_stream::demux_with_error_handler;
 ///
 /// use futures::StreamExt;
+/// use futures::future::FutureExt;
 /// use tokio::stream;
 ///
 /// #[derive(Debug)]
@@ -222,9 +223,9 @@ pub fn demux(input: TokenStream) -> TokenStream {
 ///         assert_eq!(str_stream.next().await, Some("ABC"));
 ///         assert_eq!(str_stream.next().await, None);
 ///     }
-/// )(|error| async move {
+/// )(Box::new(|error| async move {
 ///     dbg!(error);
-/// })(stream).await;
+/// }.boxed()))(stream.boxed()).await;
 /// # }
 /// ```
 ///
