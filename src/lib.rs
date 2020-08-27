@@ -7,11 +7,12 @@
 
 #![deny(unsafe_code)]
 
+#[macro_use]
 mod common;
 mod demux;
 mod mux;
 
-use common::{ith_ident, keywords, ConcatTokenStreams};
+use common::{keywords, ConcatTokenStreams};
 
 use proc_macro::TokenStream;
 

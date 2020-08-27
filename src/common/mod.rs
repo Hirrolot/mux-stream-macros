@@ -2,12 +2,24 @@ mod concat_token_streams;
 pub mod keywords;
 
 pub use concat_token_streams::ConcatTokenStreams;
-use proc_macro2::Ident;
-use quote::format_ident;
 
-pub fn ith_ident<Id>(ident: Id, i: usize) -> Ident
-where
-    Id: AsRef<str>,
-{
-    format_ident!("{}_{}", ident.as_ref(), i)
+#[macro_use]
+pub mod private_macros {
+    macro_rules! tx {
+        ($i:expr) => {
+            quote::format_ident!("tx_{}", $i)
+        };
+    }
+
+    macro_rules! rx {
+        ($i:expr) => {
+            quote::format_ident!("rx_{}", $i)
+        };
+    }
+
+    macro_rules! input_stream {
+        ($i:expr) => {
+            quote::format_ident!("input_stream_{}", $i)
+        };
+    }
 }

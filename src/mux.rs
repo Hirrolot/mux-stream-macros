@@ -66,7 +66,7 @@ where
 {
     arms.enumerate()
         .map(|(i, MuxInputStream { stream, .. })| {
-            let input_stream = crate::ith_ident("input_stream", i);
+            let input_stream = input_stream!(i);
 
             quote! {
                 let #input_stream = #stream;
@@ -81,7 +81,7 @@ fn channels(count: usize) -> TokenStream {
         let tx_0 = std::sync::Arc::new(tx_0);
     })
     .chain((1..count).map(|i| {
-        let tx = crate::ith_ident("tx", i);
+        let tx = tx!(i);
 
         quote! {
             let #tx = std::sync::Arc::new(std::clone::Clone::clone(&tx_0));
@@ -105,8 +105,8 @@ where
     I: Iterator<Item = &'a MuxInputStream>,
 {
     arms.enumerate().map(|(i, MuxInputStream { destination_variant, .. })| {
-        let tx = crate::ith_ident("tx", i);
-        let input_stream = crate::ith_ident("input_stream", i);
+        let tx = tx!(i);
+        let input_stream = input_stream!(i);
 
         quote! {
             async move {

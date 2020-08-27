@@ -48,10 +48,13 @@ use quote::quote;
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
-    let expanded = quote! {mux_stream::demux_with_error_handler!(#input)
-    (Box::new(|_error| futures::future::FutureExt::boxed(async {
-        panic!("RX has been either dropped or closed");
-    })))};
+    let expanded = quote! {
+        mux_stream::demux_with_error_handler!(#input)(
+            Box::new(|_error| futures::future::FutureExt::boxed(async {
+                panic!("RX has been either dropped or closed");
+            }))
+        )
+    };
     expanded.into()
 }
 
@@ -83,8 +86,8 @@ pub fn gen_with_error_handler(input: proc_macro::TokenStream) -> proc_macro::Tok
 fn channels(count: usize) -> TokenStream {
     (0..count)
         .map(|i| {
-            let tx = crate::ith_ident("tx", i);
-            let rx = crate::ith_ident("rx", i);
+            let tx = tx!(i);
+            let rx = rx!(i);
 
             quote! {
                 let (#tx, #rx) = tokio::sync::mpsc::unbounded_channel();
@@ -119,7 +122,7 @@ where
     let expanded = arms
         .enumerate()
         .map(|(i, DemuxArm { mut_keyword, new_stream, expr, .. })| {
-            let rx = crate::ith_ident("rx", i);
+            let rx = rx!(i);
 
             quote! {
                 async move {
@@ -136,7 +139,7 @@ where
 fn cloned_senders(count: usize) -> TokenStream {
     (0..count)
         .map(|i| {
-            let tx = crate::ith_ident("tx", i);
+            let tx = tx!(i);
 
             quote! {
                 let #tx = std::sync::Arc::clone(&#tx);
@@ -151,7 +154,7 @@ where
 {
     arms.enumerate()
         .map(|(i, DemuxArm { variant, .. })| {
-            let tx = crate::ith_ident("tx", i);
+            let tx = tx!(i);
 
             quote! {
                 #variant (update) => if let Err(error) = #tx.send(update) {
