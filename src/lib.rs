@@ -20,15 +20,15 @@ use proc_macro::TokenStream;
 /// # Grammar
 ///
 /// ```no_compile
-/// input_stream0 of MyEnum::Variant0,
+/// input_stream_name0 of MyEnum::VariantName0,
 /// ...,
-/// input_streamN of MyEnum::VariantN [,]
+/// input_stream_nameN of MyEnum::VariantNameN [,]
 /// ```
 ///
 /// # Constraints
 ///
 ///  - Ith `input_stream` shall implement [`Stream<T>`], where `T` is a type of
-///    a single argument of ith `MyEnum::Variant`.
+///    a single unnamed argument of ith `MyEnum::VariantName`.
 ///  - At least one input stream shall be provided.
 ///  - This macro can be invoked with or without a trailing comma.
 ///
@@ -98,8 +98,7 @@ pub fn mux(input: TokenStream) -> TokenStream {
 
 /// Demultiplexer with a panicking error handler.
 ///
-/// Expands to `demux_with_error_handler!(...)(|error| async move { /*
-/// panic!(...) */ })`.
+/// Expands to `demux_with_error_handler!(...)(/* A panicking closure */)`.
 ///
 /// # Example
 ///
@@ -153,35 +152,42 @@ pub fn demux(input: TokenStream) -> TokenStream {
 ///
 /// # Grammar
 ///
-/// ```no_compile
-/// [mut] output_stream0 of MyEnum::Variant0 => expr0,
+/// ```ignore
+/// [mut] output_stream_name0 of MyEnum::VariantName0 => expr0,
 /// ...
-/// [mut] output_streamN of MyEnum::VariantN => exprN [,]
+/// [mut] output_stream_nameN of MyEnum::VariantNameN => exprN [,]
 /// ```
 ///
 /// # Contraints
 ///
-///  - Ith `output_stream` is of type
+///  - Ith `output_stream_name` is of type
 ///    [`tokio::sync::mpsc::UnboundedReceiver<T>`], where `T` is a type of a
-///    single argument of ith `MyEnum::Variant`.
-///  - `MyEnum::Variant0`, ..., `MyEnum::VariantN` shall be defined as variants
-///    taking a single unnamed argument.
-///  - `expr0`, ..., `exprN` shall be expressions of the same type.
+///    single unnamed argument of ith `MyEnum::VariantName`.
+///  - `MyEnum::VariantName0`, ..., `MyEnum::VariantNameN` shall be defined as
+///    variants taking a single unnamed argument.
+///  - `expr0`, ..., `exprN` shall be expressions of the same type, `RetType`.
 ///  - At least one arm shall be provided.
 ///  - This macro can be invoked with or without a trailing comma.
 ///
 /// # Semantics
-/// This macro expands to a closure of a single parameter `error_handler`, which
-/// return a closure of a single parameter `input_stream` (implementing
-/// [`Stream<MyEnum>`]), which returns a future of a type of `expr0`, ...,
-/// `exprN`. Thus, the returned closure is [curried].
+/// Expands to:
 ///
-/// Each coming update from `input_stream` will be pushed into the corresponding
+/// ```ignore
+/// |error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>) -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
+///     |input_stream: futures::stream::BoxStream<'static, _>| { /* ... */ }
+/// }
+/// ```
+///
+/// Thus, the returned closure is [curried]. After applying two arguments to it
+/// (`(...)(...)`), you obtain a future of type `RetType` (see
+/// [_Constraints_](#contraints)).
+///
+/// `input_stream` is a stream of `MyEnum` to be demiltiplexed. Each coming
+/// update from `input_stream` will be pushed into the corresponding
 /// output stream immediately.
 ///
-/// `error_handler` is a closure, which returns `F: Future<Output = ()>` and
-/// takes [`SendError<MyEnum>`]. It is invoked when a demultiplexer fails to
-/// send an update from an input stream into one of receivers.
+/// `error_handler` is invoked when a demultiplexer fails to send an update
+/// from `input_stream` into one of receivers.
 ///
 /// # Example
 /// ```

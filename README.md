@@ -48,7 +48,7 @@ demux!(
         assert_eq!(str_stream.next().await, Some("ABC"));
         assert_eq!(str_stream.next().await, None);
     }
-)(stream);
+)(stream.boxed()).await;
 ```
 
 ## Multiplexing
@@ -69,6 +69,7 @@ enum MyEnum {
     B(u8),
     C(&'static str),
 }
+
 
 let i32_values = HashSet::from_iter(vec![123, 811]);
 let u8_values = HashSet::from_iter(vec![88]);
