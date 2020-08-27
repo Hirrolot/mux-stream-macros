@@ -12,7 +12,7 @@ This library provides macros for (de)multiplexing Rusty streams.
 
 You can think of demultiplexing as of `match` on streams:
 
-[[`examples/demux.rs`]](examples/demux.rs)
+[[`examples/demux.rs`](examples/demux.rs)]
 ```rust
 use mux_stream::demux;
 
@@ -56,7 +56,7 @@ demux!(
 
 Multiplexing gathers updates from several streams into one in an orderless manner:
 
-[[`examples/mux.rs`]](examples/mux.rs)
+[[`examples/mux.rs`](examples/mux.rs)]
 ```rust
 use mux_stream::mux;
 
