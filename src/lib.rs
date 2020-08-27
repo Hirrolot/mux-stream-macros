@@ -11,7 +11,7 @@ mod common;
 mod demux;
 mod mux;
 
-use common::{ith_ident, keywords};
+use common::{ith_ident, keywords, ConcatTokenStreams};
 
 use proc_macro::TokenStream;
 

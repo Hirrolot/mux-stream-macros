@@ -1,4 +1,4 @@
-use super::keywords;
+use super::{keywords, ConcatTokenStreams};
 
 use syn::{
     parse::{self, Parse, ParseStream},
@@ -35,6 +35,7 @@ impl Parse for Mux {
 
 use proc_macro2::TokenStream;
 use quote::quote;
+use std::iter;
 
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mux = parse_macro_input!(input as Mux);
@@ -63,34 +64,30 @@ fn move_input_streams<'a, I>(arms: I) -> TokenStream
 where
     I: Iterator<Item = &'a MuxInputStream>,
 {
-    let mut expanded = TokenStream::new();
+    arms.enumerate()
+        .map(|(i, MuxInputStream { stream, .. })| {
+            let input_stream = crate::ith_ident("input_stream", i);
 
-    for (i, MuxInputStream { stream, .. }) in arms.enumerate() {
-        let input_stream = crate::ith_ident("input_stream", i);
-
-        expanded.extend(quote! {
-            let #input_stream = #stream;
-        });
-    }
-
-    expanded
+            quote! {
+                let #input_stream = #stream;
+            }
+        })
+        .concat_token_streams()
 }
 
 fn channels(count: usize) -> TokenStream {
-    let mut expanded = quote! {
+    iter::once(quote! {
         let (tx_0, rx) = tokio::sync::mpsc::unbounded_channel();
         let tx_0 = std::sync::Arc::new(tx_0);
-    };
-
-    for i in 1..count {
+    })
+    .chain((1..count).map(|i| {
         let tx = crate::ith_ident("tx", i);
 
-        expanded.extend(quote! {
+        quote! {
             let #tx = std::sync::Arc::new(std::clone::Clone::clone(&tx_0));
-        });
-    }
-
-    expanded
+        }
+    }))
+    .concat_token_streams()
 }
 
 fn dispatch(Mux { input_streams }: &Mux) -> TokenStream {
@@ -107,24 +104,20 @@ fn redirections<'a, I>(arms: I) -> TokenStream
 where
     I: Iterator<Item = &'a MuxInputStream>,
 {
-    let mut expanded = TokenStream::new();
-
-    for (i, MuxInputStream { destination_variant, .. }) in arms.enumerate() {
+    arms.enumerate().map(|(i, MuxInputStream { destination_variant, .. })| {
         let tx = crate::ith_ident("tx", i);
         let input_stream = crate::ith_ident("input_stream", i);
 
-        expanded.extend(quote! {
-                async move {
-                    futures::StreamExt::for_each(#input_stream, move |update| {
-                        let #tx = std::sync::Arc::clone(&#tx);
+        quote! {
+            async move {
+                futures::StreamExt::for_each(#input_stream, move |update| {
+                    let #tx = std::sync::Arc::clone(&#tx);
 
-                        async move {
-                            #tx.send(#destination_variant(update)).expect("RX has been either dropped or closed");
-                        }
-                    }).await;
-                },
-            });
-    }
-
-    expanded
+                    async move {
+                        #tx.send(#destination_variant(update)).expect("RX has been either dropped or closed");
+                    }
+                }).await;
+            },
+        }
+    }).concat_token_streams()
 }

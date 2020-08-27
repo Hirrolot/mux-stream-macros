@@ -1,5 +1,7 @@
+mod concat_token_streams;
 pub mod keywords;
 
+pub use concat_token_streams::ConcatTokenStreams;
 use proc_macro2::Ident;
 use quote::format_ident;
 

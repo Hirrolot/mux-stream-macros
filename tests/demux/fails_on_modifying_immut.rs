@@ -1,5 +1,7 @@
 use mux_stream::demux;
 
+use futures::StreamExt;
+
 enum MyEnum {
     A(i32),
 }
