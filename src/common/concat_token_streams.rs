@@ -9,9 +9,8 @@ where
     I: Iterator<Item = TokenStream>,
 {
     fn concat_token_streams(self) -> TokenStream {
-        self.fold(TokenStream::new(), |mut acc, item| {
-            acc.extend(item);
-            acc
-        })
+        let mut result = TokenStream::new();
+        result.extend(self);
+        result
     }
 }
