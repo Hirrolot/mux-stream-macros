@@ -27,7 +27,7 @@ This crate empahises the [first-class] nature of [asynchronous streams] in Rust 
 
 ## Demultiplexing
 
-Given `Stream<T1 | ... | Tn>`, demultiplexing produces `Stream<T1>, ..., Stream<Tn>`. See the illustration below, in which every circle being an item of a stream and having a type (its colour):
+Given `Stream<T1 | ... | Tn>`, demultiplexing produces `Stream<T1>, ..., Stream<Tn>`. See the illustration below, in which every circle is an item of a stream and has a type (its colour):
 
 <div align="center">
     <img src="https://raw.githubusercontent.com/Hirrolot/mux-stream/master/images/DEMUX.png" />
