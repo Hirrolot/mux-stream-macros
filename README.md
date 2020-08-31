@@ -111,11 +111,11 @@ let i32_values = HashSet::from_iter(vec![123, 811]);
 let u8_values = HashSet::from_iter(vec![88]);
 let str_values = HashSet::from_iter(vec!["Hello", "ABC"]);
 
-let result: UnboundedReceiver<MyEnum> = mux! {
-    stream::iter(i32_values.clone()) of MyEnum::A,
-    stream::iter(u8_values.clone()) of MyEnum::B,
-    stream::iter(str_values.clone()) of MyEnum::C
-};
+let result: UnboundedReceiver<MyEnum> = mux!(MyEnum::A, MyEnum::B, MyEnum::C)(
+    stream::iter(i32_values.clone()),
+    stream::iter(u8_values.clone()),
+    stream::iter(str_values.clone()),
+);
 
 let (i32_results, u8_results, str_results) = result
     .fold(
