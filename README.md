@@ -22,7 +22,7 @@ This crate empahises the [first-class] nature of [asynchronous streams] in Rust 
 
 ## Demultiplexing
 
-Given a stream of an enumeration type of types `T1, ..., Tn`, demultiplexing produces streams of `T1, ..., Tn`. This process is illustrated below, with every circle being an item of a stream and having a type (its colour):
+Given `Stream<T1 | ... | Tn>`, demultiplexing produces `Stream<T1>, ..., Stream<Tn>`. See the illustration below, in which every circle being an item of a stream and having a type (its colour):
 
 <div align="center">
     <img src="images/DEMUX.png" />
@@ -70,7 +70,7 @@ demux!(
 
 ## Multiplexing
 
-Multiplexing is the opposite of demultiplexing: given streams of `T1, ..., Tn`, it produces a single stream of an enumeration type of types `T1, ..., Tn`. Again, the process is illustrated below:
+Multiplexing is the opposite of demultiplexing: given `Stream<T1>, ..., Stream<Tn>`, it produces `Stream<T1 | ... | Tn>`. Again, the process is illustrated below:
 
 <div align="center">
     <img src="images/MUX.png" />
