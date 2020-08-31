@@ -3,7 +3,6 @@
 [![Crates.io](https://img.shields.io/badge/crates.io-v0.1.0-orange.svg)](https://crates.io/crates/mux-stream)
 [![Docs.rs](https://img.shields.io/badge/docs.rs-v0.1.0-blue.svg)](https://docs.rs/mux-stream)
 
-
 This crate empahises the [first-class] nature of [asynchronous streams] in Rust by deriving the _value construction_ & _pattern matching_ operations from [ADTs], depicted by the following correspondence:
 
 | ADTs | Streams |
@@ -19,6 +18,12 @@ This crate empahises the [first-class] nature of [asynchronous streams] in Rust 
 [Multiplexing]: https://en.wikipedia.org/wiki/Multiplexing
 [Pattern matching]: https://en.wikipedia.org/wiki/Pattern_matching
 [Demultiplexing]: https://en.wikipedia.org/wiki/Multiplexer#Digital_demultiplexers
+
+## Table of contents
+
+ - [Demultiplexing](#demultiplexing)
+ - [Multiplexing](#multiplexing)
+ - [FAQ](#faq)
 
 ## Demultiplexing
 
@@ -131,3 +136,9 @@ assert_eq!(i32_results, i32_values);
 assert_eq!(u8_results, u8_values);
 assert_eq!(str_results, str_values);
 ```
+
+## FAQ
+
+Q: Is only Tokio supported now?
+
+A: Yes. I have no plans yet to support other asynchronous runtimes.
