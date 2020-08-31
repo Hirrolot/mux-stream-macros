@@ -1,7 +1,7 @@
 # mux-stream
 [![Continious integration](https://github.com/Hirrolot/mux-stream/workflows/Rust/badge.svg)](https://github.com/Hirrolot/mux-stream/actions)
-[![Crates.io](https://img.shields.io/badge/crates.io-v0.1.0-orange.svg)](https://crates.io/crates/mux-stream)
-[![Docs.rs](https://img.shields.io/badge/docs.rs-v0.1.0-blue.svg)](https://docs.rs/mux-stream)
+[![Crates.io](https://img.shields.io/crates/v/mux-stream.svg)](https://crates.io/crates/mux-stream)
+[![Docs.rs](https://docs.rs/mux-stream/badge.svg)](https://docs.rs/mux-stream)
 
 This crate empahises the [first-class] nature of [asynchronous streams] in Rust by deriving the _value construction_ & _pattern matching_ operations from [ADTs], depicted by the following correspondence:
 
