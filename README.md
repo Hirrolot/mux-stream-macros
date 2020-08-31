@@ -39,7 +39,7 @@ That is, once an update from an input stream is available, it's pushed into the 
 
 ### Example
 
-[[`examples/demux.rs`](examples/demux.rs)]
+[[`examples/demux.rs`](https://github.com/Hirrolot/mux-stream/blob/master/examples/demux.rs)]
 ```rust
 use mux_stream::demux;
 
@@ -91,7 +91,7 @@ That is, once an update from any input streams is available, it's pushed into th
 
 ### Example
 
-[[`examples/mux.rs`](examples/mux.rs)]
+[[`examples/mux.rs`](https://github.com/Hirrolot/mux-stream/blob/master/examples/mux.rs)]
 ```rust
 use mux_stream::mux;
 
