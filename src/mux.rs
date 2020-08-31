@@ -1,75 +1,67 @@
-use super::{keywords, ConcatTokenStreams};
-
-use syn::{
-    parse::{self, Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    Expr, Path, Token,
-};
-
-pub struct MuxInputStream {
-    pub stream: Expr,
-    pub destination_variant: Path,
-}
-
-impl Parse for MuxInputStream {
-    fn parse(input: ParseStream) -> parse::Result<Self> {
-        let stream = input.parse()?;
-        input.parse::<keywords::of>()?;
-        let destination_variant = input.parse()?;
-
-        Ok(Self { stream, destination_variant })
-    }
-}
-
-pub struct Mux {
-    pub input_streams: Punctuated<MuxInputStream, Token![,]>,
-}
-
-impl Parse for Mux {
-    fn parse(input: ParseStream) -> parse::Result<Self> {
-        let input_streams = Punctuated::parse_terminated(input)?;
-        Ok(Self { input_streams })
-    }
-}
+use super::ConcatTokenStreams;
 
 use proc_macro2::TokenStream;
 use quote::quote;
 use std::iter;
+use syn::{
+    parse::{self, Parse, ParseStream},
+    parse_macro_input,
+    punctuated::Punctuated,
+    Path, Token,
+};
+
+pub struct MuxArm {
+    pub destination_variant: Path,
+}
+
+impl Parse for MuxArm {
+    fn parse(input: ParseStream) -> parse::Result<Self> {
+        let destination_variant = input.parse()?;
+
+        Ok(Self { destination_variant })
+    }
+}
+
+pub struct Mux {
+    pub arms: Punctuated<MuxArm, Token![,]>,
+}
+
+impl Parse for Mux {
+    fn parse(input: ParseStream) -> parse::Result<Self> {
+        let arms = Punctuated::parse_terminated(input)?;
+        Ok(Self { arms })
+    }
+}
 
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mux = parse_macro_input!(input as Mux);
 
-    if mux.input_streams.is_empty() {
+    if mux.arms.is_empty() {
         let expected = quote! { compile_error!("At least one input stream is required") };
         return expected.into();
     }
 
-    let moved_input_streams = move_input_streams(mux.input_streams.iter());
-    let channels = channels(mux.input_streams.len());
+    let input_streams = input_streams(mux.arms.len());
+    let channels = channels(mux.arms.len());
     let dispatch = dispatch(&mux);
 
     let expanded = quote! {
-        {
-            #moved_input_streams
+        (|#input_streams| {
             #channels
             #dispatch
             rx
-        }
+        })
     };
     expanded.into()
 }
 
-fn move_input_streams<'a, I>(arms: I) -> TokenStream
-where
-    I: Iterator<Item = &'a MuxInputStream>,
-{
-    arms.enumerate()
-        .map(|(i, MuxInputStream { stream, .. })| {
+fn input_streams(arms_count: usize) -> TokenStream {
+    (0..arms_count)
+        .map(|i| {
             let input_stream = input_stream!(i);
 
             quote! {
-                let #input_stream = #stream;
+                #input_stream,
             }
         })
         .concat_token_streams()
@@ -90,7 +82,7 @@ fn channels(count: usize) -> TokenStream {
     .concat_token_streams()
 }
 
-fn dispatch(Mux { input_streams }: &Mux) -> TokenStream {
+fn dispatch(Mux { arms: input_streams }: &Mux) -> TokenStream {
     let redirections = redirections(input_streams.iter());
 
     quote! {
@@ -102,9 +94,9 @@ fn dispatch(Mux { input_streams }: &Mux) -> TokenStream {
 
 fn redirections<'a, I>(arms: I) -> TokenStream
 where
-    I: Iterator<Item = &'a MuxInputStream>,
+    I: Iterator<Item = &'a MuxArm>,
 {
-    arms.enumerate().map(|(i, MuxInputStream { destination_variant, .. })| {
+    arms.enumerate().map(|(i, MuxArm { destination_variant, .. })| {
         let tx = tx!(i);
         let input_stream = input_stream!(i);
 

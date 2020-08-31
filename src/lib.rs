@@ -21,25 +21,25 @@ use proc_macro::TokenStream;
 ///
 /// ```ebnf
 /// <mux> = <mux-arm> { "," <mux-arm> }* [","] ;
-/// <mux-arm> = <input-stream> "of" <enum-variant-path> ;
-/// <input-stream> = <expr> ;
+/// <mux-arm> = <enum-variant-path> ;
 /// <enum-variant-path> = <path> ;
 /// ```
 ///
 /// # Constraints
-///
-///  - Ith `<input-stream>` shall implement [`Stream<T>`], where `T` is a type
-///    of a single unnamed argument of ith `<enum-variant-path>`.
+///  - Enumeration variants shall be defined as variants taking a single unnamed
+///    argument.
 ///
 /// # Semantics
-/// (`MyEnum` is an enumeration comprising of variants of the specified paths).
+/// (`MyEnum` is an enumeration comprising of variants of the specified paths.)
 ///
-/// Returns [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
+/// Expands to a closure that has the same number of formal arguments as the
+/// number of paths specified; each one must implement `Stream<T>`, where `T` is
+/// a type of a single unnamed argument of the corresponding
+/// `<enum-variant-path>`. This closure returns
+/// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
 ///
-/// Updates into the result stream may come in any order, simultaneously from
-/// all the provided input streams (in a separate [Tokio task]).
-///
-/// All the provided input streams will be moved.
+/// It propagates updates into the result stream in any order, simultaneously
+/// from all the provided input streams (in a separate [Tokio task]).
 ///
 /// ```
 /// use mux_stream::mux;
@@ -63,11 +63,11 @@ use proc_macro::TokenStream;
 /// let u8_values = HashSet::from_iter(vec![88]);
 /// let str_values = HashSet::from_iter(vec!["Hello", "ABC"]);
 ///
-/// let result: UnboundedReceiver<MyEnum> = mux! {
-///     stream::iter(i32_values.clone()) of MyEnum::A,
-///     stream::iter(u8_values.clone()) of MyEnum::B,
-///     stream::iter(str_values.clone()) of MyEnum::C
-/// };
+/// let result: UnboundedReceiver<MyEnum> = mux!(MyEnum::A, MyEnum::B, MyEnum::C)(
+///     stream::iter(i32_values.clone()),
+///     stream::iter(u8_values.clone()),
+///     stream::iter(str_values.clone()),
+/// );
 ///
 /// let (i32_results, u8_results, str_results) = result
 ///     .fold(
@@ -89,6 +89,9 @@ use proc_macro::TokenStream;
 /// assert_eq!(str_results, str_values);
 /// # }
 /// ```
+///
+/// Hash sets are used here owing to the obvious absence of order preservation
+/// of updates from input streams.
 ///
 /// [`Stream<T>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
 /// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
@@ -226,7 +229,7 @@ pub fn demux_panicking(input: TokenStream) -> TokenStream {
 ///  - Expressions shall be of the same type, `RetType`.
 ///
 /// # Semantics
-/// (`MyEnum` is an enumeration comprising of variants of the specified paths).
+/// (`MyEnum` is an enumeration comprising of variants of the specified paths.)
 ///
 /// Expands to:
 ///
