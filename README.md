@@ -4,11 +4,21 @@
 [![Docs.rs](https://img.shields.io/badge/docs.rs-v0.1.0-blue.svg)](https://docs.rs/mux-stream)
 
 
-This crate empahises the [first-class] nature of [asynchronous streams] in Rust by deriving the _construction_ & _pattern matching_ operations from [ADTs].
+This crate empahises the [first-class] nature of [asynchronous streams] in Rust by deriving the _value construction_ & _pattern matching_ operations from [ADTs], depicted by the following correspondence:
+
+| ADTs | Streams |
+|----------|----------|
+| [Value construction] | [Multiplexing] |
+| [Pattern matching] | [Demultiplexing] |
 
 [first-class]: https://en.wikipedia.org/wiki/First-class_citizen
 [asynchronous streams]: https://docs.rs/futures/latest/futures/stream/index.html
 [ADTs]: https://en.wikipedia.org/wiki/Algebraic_data_type
+
+[Value construction]: https://en.wikipedia.org/wiki/Algebraic_data_type
+[Multiplexing]: https://en.wikipedia.org/wiki/Multiplexing
+[Pattern matching]: https://en.wikipedia.org/wiki/Pattern_matching
+[Demultiplexing]: https://en.wikipedia.org/wiki/Multiplexer#Digital_demultiplexers
 
 ## Demultiplexing
 
