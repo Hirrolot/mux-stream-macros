@@ -28,6 +28,12 @@ Given `Stream<T1 | ... | Tn>`, demultiplexing produces `Stream<T1>, ..., Stream<
     <img src="images/DEMUX.png" />
 </div>
 
+That is, once an update from an input stream is available, it's pushed into the corresponding output stream in a separate [Tokio task]. No output stream can slow down another one.
+
+[Tokio task]: https://docs.rs/tokio/0.2.22/tokio/task/index.html
+
+### Example
+
 [[`examples/demux.rs`](examples/demux.rs)]
 ```rust
 use mux_stream::demux;
@@ -75,6 +81,10 @@ Multiplexing is the opposite of demultiplexing: given `Stream<T1>, ..., Stream<T
 <div align="center">
     <img src="images/MUX.png" />
 </div>
+
+That is, once an update from any input streams is available, it's pushed into the output stream. Again, this work is performed asynchronously in a separate [Tokio task].
+
+### Example
 
 [[`examples/mux.rs`](examples/mux.rs)]
 ```rust
