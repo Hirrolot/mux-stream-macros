@@ -3,10 +3,13 @@
 [![Crates.io](https://img.shields.io/badge/crates.io-v0.1.0-orange.svg)](https://crates.io/crates/mux-stream)
 [![Docs.rs](https://img.shields.io/badge/docs.rs-v0.1.0-blue.svg)](https://docs.rs/mux-stream)
 
-This library provides macros for (de)multiplexing Rusty streams.
+This crate empahises the [first-class] nature of [asynchronous streams] in Rust by providing the means of [de(multiplexing)] them (similar to value constructors & [pattern matching] on [ADTs]).
 
- - Multiplexing: `Stream<A>, Stream<B>, Stream<C>` -> `Stream<A | B | C>`
- - Demultiplexing: `Stream<A | B | C>` -> `Stream<A>, Stream<B>, Stream<C>`
+[first-class]: https://en.wikipedia.org/wiki/First-class_citizen
+[asynchronous streams]: https://docs.rs/futures/latest/futures/stream/index.html
+[de(multiplexing)]: https://en.wikipedia.org/wiki/Multiplexing
+[pattern matching]: https://en.wikipedia.org/wiki/Pattern_matching
+[ADTs]: https://en.wikipedia.org/wiki/Algebraic_data_type
 
 ## Demultiplexing
 
