@@ -22,8 +22,6 @@ This crate empahises the [first-class] nature of [asynchronous streams] in Rust 
 
 ## Demultiplexing
 
-You can think of demultiplexing as of `match` on streams:
-
 [[`examples/demux.rs`](examples/demux.rs)]
 ```rust
 use mux_stream::demux;
@@ -65,8 +63,6 @@ demux!(
 ```
 
 ## Multiplexing
-
-Multiplexing gathers updates from several streams into one in an orderless manner:
 
 [[`examples/mux.rs`](examples/mux.rs)]
 ```rust
