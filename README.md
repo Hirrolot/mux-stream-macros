@@ -137,6 +137,8 @@ assert_eq!(u8_results, u8_values);
 assert_eq!(str_results, str_values);
 ```
 
+Hash sets are used here owing to the obvious absence of order preservation of updates from input streams.
+
 ## FAQ
 
 Q: Is only Tokio supported now?
