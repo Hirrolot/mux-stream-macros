@@ -22,6 +22,10 @@ This crate empahises the [first-class] nature of [asynchronous streams] in Rust 
 
 ## Demultiplexing
 
+<div align="center">
+    <img src="images/DEMUX.png" />
+</div>
+
 [[`examples/demux.rs`](examples/demux.rs)]
 ```rust
 use mux_stream::demux;
@@ -63,6 +67,10 @@ demux!(
 ```
 
 ## Multiplexing
+
+<div align="center">
+    <img src="images/MUX.png" />
+</div>
 
 [[`examples/mux.rs`](examples/mux.rs)]
 ```rust
