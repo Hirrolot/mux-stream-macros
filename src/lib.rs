@@ -1,8 +1,5 @@
 //! This library provides macros for (de)multiplexing Rusty streams.
 //!
-//!  - Multiplexing: `Stream<A>, Stream<B>, Stream<C>` -> `Stream<A | B | C>`
-//!  - Demultiplexing: `Stream<A | B | C>` -> `Stream<A>, Stream<B>, Stream<C>`
-//!
 //! See [our GitHub repository](https://github.com/Hirrolot/mux-stream) for a high-level overview.
 
 #![deny(unsafe_code)]
@@ -18,26 +15,29 @@ use proc_macro::TokenStream;
 
 /// Multiplexes several streams into one.
 ///
-/// # Grammar
+/// # EBNF grammar
 ///
-/// ```no_compile
-/// input_stream_name0 of MyEnum::VariantName0,
-/// ...,
-/// input_stream_nameN of MyEnum::VariantNameN [,]
+/// (Some nonterminals are taken from [_Macros By Example_]).
+///
+/// ```ebnf
+/// <mux> = <mux-arm> { "," <mux-arm> }* [","] ;
+/// <mux-arm> = <input-stream> "of" <enum-variant-path> ;
+/// <input-stream> = <expr> ;
+/// <enum-variant-path> = <path> ;
 /// ```
 ///
 /// # Constraints
 ///
-///  - Ith `input_stream` shall implement [`Stream<T>`], where `T` is a type of
-///    a single unnamed argument of ith `MyEnum::VariantName`.
-///  - At least one input stream shall be provided.
-///  - This macro can be invoked with or without a trailing comma.
+///  - Ith `<input-stream>` shall implement [`Stream<T>`], where `T` is a type
+///    of a single unnamed argument of ith `<enum-variant-path>`.
 ///
 /// # Semantics
+/// (`MyEnum` is an enumeration comprising of variants of the specified paths).
+///
 /// Returns [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
 ///
 /// Updates into the result stream may come in any order, simultaneously from
-/// all the provided input streams.
+/// all the provided input streams (in a separate [Tokio task]).
 ///
 /// All the provided input streams will be moved.
 ///
@@ -92,6 +92,8 @@ use proc_macro::TokenStream;
 ///
 /// [`Stream<T>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
 /// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
+/// [Tokio task]: https://docs.rs/tokio/latest/tokio/task/index.html
+/// [_Macros By Example_]: https://doc.rust-lang.org/reference/macros-by-example.html#macros-by-example
 #[proc_macro]
 pub fn mux(input: TokenStream) -> TokenStream {
     mux::gen(input)
@@ -151,26 +153,29 @@ pub fn demux(input: TokenStream) -> TokenStream {
 
 /// Demultiplexes a stream into several others with a custom error handler.
 ///
-/// # Grammar
+/// # EBNF grammar
 ///
-/// ```ignore
-/// [mut] output_stream_name0 of MyEnum::VariantName0 => expr0,
-/// ...
-/// [mut] output_stream_nameN of MyEnum::VariantNameN => exprN [,]
+/// (Some nonterminals are taken from [_Macros By Example_]).
+///
+/// ```ebnf
+/// <demux> = <demux-arm> { "," <demux-arm> }* [","] ;
+/// <demux-arm> = ["mut"] <output-stream-name> "of" <enum-variant-path> "=>" <expr>;
+/// <output-stream-name> = <ident> ;
+/// <enum-variant-path> = <path> ;
 /// ```
 ///
 /// # Contraints
 ///
-///  - Ith `output_stream_name` is of type
+///  - Ith `<output-stream-name>` is of type
 ///    [`tokio::sync::mpsc::UnboundedReceiver<T>`], where `T` is a type of a
-///    single unnamed argument of ith `MyEnum::VariantName`.
-///  - `MyEnum::VariantName0`, ..., `MyEnum::VariantNameN` shall be defined as
-///    variants taking a single unnamed argument.
-///  - `expr0`, ..., `exprN` shall be expressions of the same type, `RetType`.
-///  - At least one arm shall be provided.
-///  - This macro can be invoked with or without a trailing comma.
+///    single unnamed argument of ith `<enum-variant-name>`.
+///  - Enumeration variants shall be defined as variants taking a single unnamed
+///    argument.
+///  - Expressions shall be of the same type, `RetType`.
 ///
 /// # Semantics
+/// (`MyEnum` is an enumeration comprising of variants of the specified paths).
+///
 /// Expands to:
 ///
 /// ```ignore
@@ -185,7 +190,7 @@ pub fn demux(input: TokenStream) -> TokenStream {
 ///
 /// `input_stream` is a stream of `MyEnum` to be demiltiplexed. Each coming
 /// update from `input_stream` will be pushed into the corresponding
-/// output stream immediately.
+/// output stream immediately, in a separate [Tokio task].
 ///
 /// `error_handler` is invoked when a demultiplexer fails to send an update
 /// from `input_stream` into one of receivers.
@@ -240,6 +245,8 @@ pub fn demux(input: TokenStream) -> TokenStream {
 /// [`Stream<MyEnum>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
 /// [`tokio::sync::mpsc::UnboundedReceiver<T>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 /// [`SendError<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/error/struct.SendError.html
+/// [Tokio task]: https://docs.rs/tokio/latest/tokio/task/index.html
+/// [_Macros By Example_]: https://doc.rust-lang.org/reference/macros-by-example.html#macros-by-example
 #[proc_macro]
 pub fn demux_with_error_handler(input: TokenStream) -> TokenStream {
     demux::gen_with_error_handler(input)
