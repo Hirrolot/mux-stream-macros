@@ -99,9 +99,9 @@ pub fn mux(input: TokenStream) -> TokenStream {
     mux::gen(input)
 }
 
-/// Demultiplexer with a panicking error handler.
+/// Demultiplexer with a silent error handler.
 ///
-/// Expands to `demux_with_error_handler!(...)(/* A panicking closure */)`.
+/// Expands to `demux_with_error_handler!(...)(/* A no-op closure */)`.
 ///
 /// # Example
 ///
@@ -149,6 +149,58 @@ pub fn mux(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn demux(input: TokenStream) -> TokenStream {
     demux::gen(input)
+}
+
+/// Demultiplexer with a panicking error handler.
+///
+/// Expands to `demux_with_error_handler!(...)(/* A panicking closure */)`.
+///
+/// # Example
+///
+/// ```
+/// use mux_stream::demux_panicking;
+///
+/// use futures::StreamExt;
+/// use tokio::stream;
+///
+/// #[derive(Debug)]
+/// enum MyEnum {
+///     A(i32),
+///     B(f64),
+///     C(&'static str),
+/// }
+///
+/// # #[tokio::main]
+/// # async fn main_() {
+/// let stream = stream::iter(vec![
+///     MyEnum::A(123),
+///     MyEnum::B(24.241),
+///     MyEnum::C("Hello"),
+///     MyEnum::C("ABC"),
+///     MyEnum::A(811),
+/// ]);
+///
+/// demux_panicking!(
+///     mut i32_stream of MyEnum::A => {
+///         assert_eq!(i32_stream.next().await, Some(123));
+///         assert_eq!(i32_stream.next().await, Some(811));
+///         assert_eq!(i32_stream.next().await, None);
+///     },
+///     mut f64_stream of MyEnum::B => {
+///         assert_eq!(f64_stream.next().await, Some(24.241));
+///         assert_eq!(f64_stream.next().await, None);
+///     },
+///     mut str_stream of MyEnum::C => {
+///         assert_eq!(str_stream.next().await, Some("Hello"));
+///         assert_eq!(str_stream.next().await, Some("ABC"));
+///         assert_eq!(str_stream.next().await, None);
+///     }
+/// )(stream.boxed()).await;
+/// # }
+/// ```
+#[proc_macro]
+pub fn demux_panicking(input: TokenStream) -> TokenStream {
+    demux::gen_panicking(input)
 }
 
 /// Demultiplexes a stream into several others with a custom error handler.

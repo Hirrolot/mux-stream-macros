@@ -50,6 +50,17 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         mux_stream::demux_with_error_handler!(#input)(
+            Box::new(|_error| futures::future::FutureExt::boxed(async { }))
+        )
+    };
+    expanded.into()
+}
+
+pub fn gen_panicking(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = proc_macro2::TokenStream::from(input);
+
+    let expanded = quote! {
+        mux_stream::demux_with_error_handler!(#input)(
             Box::new(|_error| futures::future::FutureExt::boxed(async {
                 panic!("RX has been either dropped or closed");
             }))
