@@ -1,5 +1,7 @@
 use super::{keywords, ConcatTokenStreams};
 
+use proc_macro2::TokenStream;
+use quote::quote;
 use syn::{
     parse,
     parse::{Parse, ParseStream},
@@ -41,9 +43,6 @@ impl Parse for Demux {
         Ok(Self { arms })
     }
 }
-
-use proc_macro2::TokenStream;
-use quote::quote;
 
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = proc_macro2::TokenStream::from(input);
