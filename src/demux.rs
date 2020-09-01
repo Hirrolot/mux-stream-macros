@@ -1,4 +1,4 @@
-use super::{keywords, ConcatTokenStreams};
+use super::ConcatTokenStreams;
 
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -7,40 +7,18 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Expr, Ident, Path, Token,
+    Path, Token,
 };
 
-struct DemuxArm {
-    pub mut_keyword: Option<Token![mut]>,
-    pub new_stream: Ident,
-    pub variant: Path,
-    pub expr: Expr,
-}
-
-impl Parse for DemuxArm {
-    fn parse(input: ParseStream) -> parse::Result<Self> {
-        let mut_keyword = input.parse()?;
-        let new_stream = input.parse()?;
-
-        input.parse::<keywords::of>()?;
-        let variant = input.parse()?;
-
-        input.parse::<Token![=>]>()?;
-        let expr = input.parse::<Expr>()?;
-
-        Ok(Self { mut_keyword, new_stream, variant, expr })
-    }
-}
-
 struct Demux {
-    pub arms: Punctuated<DemuxArm, Token![,]>,
+    pub variants: Punctuated<Path, Token![,]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
-        let arms = Punctuated::parse_terminated(input)?;
+        let variants = Punctuated::parse_terminated(input)?;
 
-        Ok(Self { arms })
+        Ok(Self { variants })
     }
 }
 
@@ -71,24 +49,24 @@ pub fn gen_panicking(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 pub fn gen_with_error_handler(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let demux = parse_macro_input!(input as Demux);
 
-    if demux.arms.is_empty() {
+    if demux.variants.is_empty() {
         let expected = quote! { compile_error!("At least one arm is required") };
         return expected.into();
     }
 
-    let channels = channels(demux.arms.len());
+    let channels = channels(demux.variants.len());
     let dispatch = dispatch(&demux);
-    let join = join(demux.arms.iter());
+    let output_streams = output_streams(demux.variants.len());
 
     // The formal arguments are boxed owing to the weak type deduction:
     // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=443698f46d4e1e4ef313b6bb200149d4.
     let expanded = quote! {
         (|error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>) -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
-            |input_stream: futures::stream::BoxStream<'static, _>| async move {
+            |input_stream: futures::stream::BoxStream<'static, _>| {
                 let error_handler = std::sync::Arc::new(error_handler);
                 #channels
                 #dispatch
-                #join
+                #output_streams
             }
         })
     };
@@ -109,9 +87,9 @@ fn channels(count: usize) -> TokenStream {
         .concat_token_streams()
 }
 
-fn dispatch(Demux { arms, .. }: &Demux) -> TokenStream {
-    let cloned_senders = cloned_senders(arms.len());
-    let dispatcher_arms = dispatcher_arms(arms.iter());
+fn dispatch(demux: &Demux) -> TokenStream {
+    let cloned_senders = cloned_senders(demux.variants.len());
+    let dispatcher_arms = dispatcher_arms(&demux);
 
     quote! {
         tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
@@ -127,25 +105,18 @@ fn dispatch(Demux { arms, .. }: &Demux) -> TokenStream {
     }
 }
 
-fn join<'a, I>(arms: I) -> TokenStream
-where
-    I: Iterator<Item = &'a DemuxArm>,
-{
-    let expanded = arms
-        .enumerate()
-        .map(|(i, DemuxArm { mut_keyword, new_stream, expr, .. })| {
+fn output_streams(count: usize) -> TokenStream {
+    let expanded = (0..count)
+        .map(|i| {
             let rx = rx!(i);
 
             quote! {
-                async move {
-                    let #mut_keyword #new_stream = #rx;
-                    #expr
-                },
+                #rx,
             }
         })
         .concat_token_streams();
 
-    quote! { tokio::join!(#expanded); }
+    quote! { (#expanded) }
 }
 
 fn cloned_senders(count: usize) -> TokenStream {
@@ -160,12 +131,11 @@ fn cloned_senders(count: usize) -> TokenStream {
         .concat_token_streams()
 }
 
-fn dispatcher_arms<'a, I>(arms: I) -> TokenStream
-where
-    I: Iterator<Item = &'a DemuxArm>,
-{
-    arms.enumerate()
-        .map(|(i, DemuxArm { variant, .. })| {
+fn dispatcher_arms(Demux { variants, .. }: &Demux) -> TokenStream {
+    variants
+        .iter()
+        .enumerate()
+        .map(|(i, variant)| {
             let tx = tx!(i);
 
             quote! {

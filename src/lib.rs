@@ -9,34 +9,21 @@ mod common;
 mod demux;
 mod mux;
 
-use common::{keywords, ConcatTokenStreams};
+use common::ConcatTokenStreams;
 
 use proc_macro::TokenStream;
 
 /// Multiplexes several streams into one.
 ///
-/// # EBNF grammar
-///
-/// (Some nonterminals are taken from [_Macros By Example_]).
-///
-/// ```ebnf
-/// <mux> = <mux-arm> { "," <mux-arm> }* [","] ;
-/// <mux-arm> = <enum-variant-path> ;
-/// <enum-variant-path> = <path> ;
-/// ```
-///
-/// # Constraints
-///  - Enumeration variants shall be defined as variants taking a single unnamed
-///    argument.
-///
-/// # Semantics
-/// (`MyEnum` is an enumeration comprising of variants of the specified paths.)
+/// Accepts a non-empty list of paths to variants of an enumeration, possibly
+/// with a trailing comma. All enumeration variants shall be defined as variants
+/// taking a single unnamed parameter.
 ///
 /// Expands to a closure that has the same number of formal arguments as the
-/// number of paths specified; each one must implement `Stream<T>`, where `T` is
-/// a type of a single unnamed argument of the corresponding
-/// `<enum-variant-path>`. This closure returns
-/// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`].
+/// number of paths specified; each one must implement [`Stream<T>`], where `T`
+/// is a type of a single unnamed parameter of the corresponding variant. This
+/// closure returns [`tokio::sync::mpsc::UnboundedReceiver`] of your enumeration
+/// type.
 ///
 /// It propagates updates into the result stream in any order, simultaneously
 /// from all the provided input streams (in a separate [Tokio task]).
@@ -94,9 +81,8 @@ use proc_macro::TokenStream;
 /// of updates from input streams.
 ///
 /// [`Stream<T>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
-/// [`tokio::sync::mpsc::UnboundedReceiver<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
+/// [`tokio::sync::mpsc::UnboundedReceiver`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
 /// [Tokio task]: https://docs.rs/tokio/latest/tokio/task/index.html
-/// [_Macros By Example_]: https://doc.rust-lang.org/reference/macros-by-example.html#macros-by-example
 #[proc_macro]
 pub fn mux(input: TokenStream) -> TokenStream {
     mux::gen(input)
@@ -131,22 +117,19 @@ pub fn mux(input: TokenStream) -> TokenStream {
 ///     MyEnum::A(811),
 /// ]);
 ///
-/// demux!(
-///     mut i32_stream of MyEnum::A => {
-///         assert_eq!(i32_stream.next().await, Some(123));
-///         assert_eq!(i32_stream.next().await, Some(811));
-///         assert_eq!(i32_stream.next().await, None);
-///     },
-///     mut f64_stream of MyEnum::B => {
-///         assert_eq!(f64_stream.next().await, Some(24.241));
-///         assert_eq!(f64_stream.next().await, None);
-///     },
-///     mut str_stream of MyEnum::C => {
-///         assert_eq!(str_stream.next().await, Some("Hello"));
-///         assert_eq!(str_stream.next().await, Some("ABC"));
-///         assert_eq!(str_stream.next().await, None);
-///     }
-/// )(stream.boxed()).await;
+/// let (mut i32_stream, mut f64_stream, mut str_stream) =
+///     demux!(MyEnum::A, MyEnum::B, MyEnum::C)(stream.boxed());
+///
+/// assert_eq!(i32_stream.next().await, Some(123));
+/// assert_eq!(i32_stream.next().await, Some(811));
+/// assert_eq!(i32_stream.next().await, None);
+///
+/// assert_eq!(f64_stream.next().await, Some(24.241));
+/// assert_eq!(f64_stream.next().await, None);
+///
+/// assert_eq!(str_stream.next().await, Some("Hello"));
+/// assert_eq!(str_stream.next().await, Some("ABC"));
+/// assert_eq!(str_stream.next().await, None);
 /// # }
 /// ```
 #[proc_macro]
@@ -183,22 +166,19 @@ pub fn demux(input: TokenStream) -> TokenStream {
 ///     MyEnum::A(811),
 /// ]);
 ///
-/// demux_panicking!(
-///     mut i32_stream of MyEnum::A => {
-///         assert_eq!(i32_stream.next().await, Some(123));
-///         assert_eq!(i32_stream.next().await, Some(811));
-///         assert_eq!(i32_stream.next().await, None);
-///     },
-///     mut f64_stream of MyEnum::B => {
-///         assert_eq!(f64_stream.next().await, Some(24.241));
-///         assert_eq!(f64_stream.next().await, None);
-///     },
-///     mut str_stream of MyEnum::C => {
-///         assert_eq!(str_stream.next().await, Some("Hello"));
-///         assert_eq!(str_stream.next().await, Some("ABC"));
-///         assert_eq!(str_stream.next().await, None);
-///     }
-/// )(stream.boxed()).await;
+/// let (mut i32_stream, mut f64_stream, mut str_stream) =
+///     demux_panicking!(MyEnum::A, MyEnum::B, MyEnum::C)(stream.boxed());
+///
+/// assert_eq!(i32_stream.next().await, Some(123));
+/// assert_eq!(i32_stream.next().await, Some(811));
+/// assert_eq!(i32_stream.next().await, None);
+///
+/// assert_eq!(f64_stream.next().await, Some(24.241));
+/// assert_eq!(f64_stream.next().await, None);
+///
+/// assert_eq!(str_stream.next().await, Some("Hello"));
+/// assert_eq!(str_stream.next().await, Some("ABC"));
+/// assert_eq!(str_stream.next().await, None);
 /// # }
 /// ```
 #[proc_macro]
@@ -208,28 +188,9 @@ pub fn demux_panicking(input: TokenStream) -> TokenStream {
 
 /// Demultiplexes a stream into several others with a custom error handler.
 ///
-/// # EBNF grammar
-///
-/// (Some nonterminals are taken from [_Macros By Example_]).
-///
-/// ```ebnf
-/// <demux> = <demux-arm> { "," <demux-arm> }* [","] ;
-/// <demux-arm> = ["mut"] <output-stream-name> "of" <enum-variant-path> "=>" <expr>;
-/// <output-stream-name> = <ident> ;
-/// <enum-variant-path> = <path> ;
-/// ```
-///
-/// # Contraints
-///
-///  - Ith `<output-stream-name>` is of type
-///    [`tokio::sync::mpsc::UnboundedReceiver<T>`], where `T` is a type of a
-///    single unnamed argument of ith `<enum-variant-name>`.
-///  - Enumeration variants shall be defined as variants taking a single unnamed
-///    argument.
-///  - Expressions shall be of the same type, `RetType`.
-///
-/// # Semantics
-/// (`MyEnum` is an enumeration comprising of variants of the specified paths.)
+/// Accepts a non-empty list of paths to variants of an enumeration, possibly
+/// with a trailing comma. All enumeration variants shall be defined as variants
+/// taking a single unnamed parameter.
 ///
 /// Expands to:
 ///
@@ -240,11 +201,13 @@ pub fn demux_panicking(input: TokenStream) -> TokenStream {
 /// ```
 ///
 /// Thus, the returned closure is [curried]. After applying two arguments to it
-/// (`(...)(...)`), you obtain a future of type `RetType` (see
-/// [_Constraints_](#contraints)).
+/// (`(...)(...)`), you obtain a future of type
+/// `(tokio::sync::mpsc::UnboundedReceiver<T[1]>, ...,
+/// tokio::sync::mpsc::UnboundedReceiver<T[n]>)`, where `T[i]` is a type of a
+/// single unnamed parameter of the corresponding provided variant.
 ///
-/// `input_stream` is a stream of `MyEnum` to be demiltiplexed. Each coming
-/// update from `input_stream` will be pushed into the corresponding
+/// `input_stream` is a stream of your enumeration to be demiltiplexed. Each
+/// coming update from `input_stream` will be pushed into the corresponding
 /// output stream immediately, in a separate [Tokio task].
 ///
 /// `error_handler` is invoked when a demultiplexer fails to send an update
@@ -254,8 +217,7 @@ pub fn demux_panicking(input: TokenStream) -> TokenStream {
 /// ```
 /// use mux_stream::demux_with_error_handler;
 ///
-/// use futures::StreamExt;
-/// use futures::future::FutureExt;
+/// use futures::{future::FutureExt, StreamExt};
 /// use tokio::stream;
 ///
 /// #[derive(Debug)]
@@ -275,33 +237,29 @@ pub fn demux_panicking(input: TokenStream) -> TokenStream {
 ///     MyEnum::A(811),
 /// ]);
 ///
-/// demux_with_error_handler!(
-///     mut i32_stream of MyEnum::A => {
-///         assert_eq!(i32_stream.next().await, Some(123));
-///         assert_eq!(i32_stream.next().await, Some(811));
-///         assert_eq!(i32_stream.next().await, None);
-///     },
-///     mut f64_stream of MyEnum::B => {
-///         assert_eq!(f64_stream.next().await, Some(24.241));
-///         assert_eq!(f64_stream.next().await, None);
-///     },
-///     mut str_stream of MyEnum::C => {
-///         assert_eq!(str_stream.next().await, Some("Hello"));
-///         assert_eq!(str_stream.next().await, Some("ABC"));
-///         assert_eq!(str_stream.next().await, None);
-///     }
-/// )(Box::new(|error| async move {
-///     dbg!(error);
-/// }.boxed()))(stream.boxed()).await;
+/// let (mut i32_stream, mut f64_stream, mut str_stream) =
+///     demux_with_error_handler!(MyEnum::A, MyEnum::B, MyEnum::C)(Box::new(|error| {
+///         async move {
+///             dbg!(error);
+///         }
+///         .boxed()
+///     }))(stream.boxed());
+///
+/// assert_eq!(i32_stream.next().await, Some(123));
+/// assert_eq!(i32_stream.next().await, Some(811));
+/// assert_eq!(i32_stream.next().await, None);
+///
+/// assert_eq!(f64_stream.next().await, Some(24.241));
+/// assert_eq!(f64_stream.next().await, None);
+///
+/// assert_eq!(str_stream.next().await, Some("Hello"));
+/// assert_eq!(str_stream.next().await, Some("ABC"));
+/// assert_eq!(str_stream.next().await, None);
 /// # }
 /// ```
 ///
 /// [curried]: https://en.wikipedia.org/wiki/Currying
-/// [`Stream<MyEnum>`]: https://docs.rs/futures/latest/futures/stream/trait.Stream.html
-/// [`tokio::sync::mpsc::UnboundedReceiver<T>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/struct.UnboundedReceiver.html
-/// [`SendError<MyEnum>`]: https://docs.rs/tokio/latest/tokio/sync/mpsc/error/struct.SendError.html
 /// [Tokio task]: https://docs.rs/tokio/latest/tokio/task/index.html
-/// [_Macros By Example_]: https://doc.rust-lang.org/reference/macros-by-example.html#macros-by-example
 #[proc_macro]
 pub fn demux_with_error_handler(input: TokenStream) -> TokenStream {
     demux::gen_with_error_handler(input)

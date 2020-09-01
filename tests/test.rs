@@ -7,5 +7,4 @@ fn test() {
 
     t.pass("tests/ui/demux/works.rs");
     t.compile_fail("tests/ui/demux/fails_on_empty_arms.rs");
-    t.compile_fail("tests/ui/demux/fails_on_modifying_immut.rs");
 }
