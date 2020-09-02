@@ -22,35 +22,11 @@ impl Parse for Demux {
     }
 }
 
-pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = proc_macro2::TokenStream::from(input);
-
-    let expanded = quote! {
-        mux_stream_macros::demux_with_error_handler!(#input)(
-            Box::new(|_error| futures::future::FutureExt::boxed(async { }))
-        )
-    };
-    expanded.into()
-}
-
-pub fn gen_panicking(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = proc_macro2::TokenStream::from(input);
-
-    let expanded = quote! {
-        mux_stream_macros::demux_with_error_handler!(#input)(
-            Box::new(|_error| futures::future::FutureExt::boxed(async {
-                panic!("RX has been either dropped or closed");
-            }))
-        )
-    };
-    expanded.into()
-}
-
 pub fn gen_with_error_handler(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let demux = parse_macro_input!(input as Demux);
 
     if demux.variants.is_empty() {
-        let expected = quote! { compile_error!("At least one arm is required") };
+        let expected = quote! { compile_error!("At least one variant is required") };
         return expected.into();
     }
 

@@ -37,7 +37,7 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mux = parse_macro_input!(input as Mux);
 
     if mux.arms.is_empty() {
-        let expected = quote! { compile_error!("At least one input stream is required") };
+        let expected = quote! { compile_error!("At least one variant is required") };
         return expected.into();
     }
 

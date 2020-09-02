@@ -1,7 +1,0 @@
-error: At least one arm is required
- --> $DIR/fails_on_empty_arms.rs:4:5
-  |
-4 |     demux!();
-  |     ^^^^^^^^^
-  |
-  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
