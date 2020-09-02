@@ -1,4 +1,4 @@
-use mux_stream::mux;
+use mux_stream_macros::mux;
 
 use std::{collections::HashSet, iter::FromIterator};
 

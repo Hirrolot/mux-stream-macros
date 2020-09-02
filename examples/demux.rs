@@ -1,4 +1,4 @@
-use mux_stream::demux;
+use mux_stream_macros::demux;
 
 use futures::StreamExt;
 use tokio::stream;

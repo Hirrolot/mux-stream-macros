@@ -29,7 +29,7 @@ use proc_macro::TokenStream;
 /// from all the provided input streams (in a separate [Tokio task]).
 ///
 /// ```
-/// use mux_stream::mux;
+/// use mux_stream_macros::mux;
 ///
 /// use std::{collections::HashSet, iter::FromIterator};
 ///
@@ -95,7 +95,7 @@ pub fn mux(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```
-/// use mux_stream::demux;
+/// use mux_stream_macros::demux;
 ///
 /// use futures::StreamExt;
 /// use tokio::stream;
@@ -144,7 +144,7 @@ pub fn demux(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```
-/// use mux_stream::demux_panicking;
+/// use mux_stream_macros::demux_panicking;
 ///
 /// use futures::StreamExt;
 /// use tokio::stream;
@@ -215,7 +215,7 @@ pub fn demux_panicking(input: TokenStream) -> TokenStream {
 ///
 /// # Example
 /// ```
-/// use mux_stream::demux_with_error_handler;
+/// use mux_stream_macros::demux_with_error_handler;
 ///
 /// use futures::{future::FutureExt, StreamExt};
 /// use tokio::stream;

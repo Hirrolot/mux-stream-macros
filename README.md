@@ -41,7 +41,7 @@ That is, once an update from an input stream is available, it's pushed into the 
 
 [[`examples/demux.rs`](https://github.com/Hirrolot/mux-stream/blob/master/examples/demux.rs)]
 ```rust
-use mux_stream::demux;
+use mux_stream_macros::demux;
 
 use futures::StreamExt;
 use tokio::stream;
@@ -90,7 +90,7 @@ That is, once an update from any input streams is available, it's pushed into th
 
 [[`examples/mux.rs`](https://github.com/Hirrolot/mux-stream/blob/master/examples/mux.rs)]
 ```rust
-use mux_stream::mux;
+use mux_stream_macros::mux;
 
 use std::{collections::HashSet, iter::FromIterator};
 

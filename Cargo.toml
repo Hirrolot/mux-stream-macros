@@ -1,5 +1,5 @@
 [package]
-name = "mux-stream"
+name = "mux-stream-macros"
 version = "0.1.0"
 authors = ["Temirkhan Myrzamadi <hirrolot@gmail.com>"]
 edition = "2018"
