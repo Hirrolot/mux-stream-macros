@@ -1,4 +1,4 @@
-use mux_stream_macros::demux_with_error_handler;
+use mux_stream_macros::demux;
 
 use futures::{FutureExt, StreamExt};
 use tokio::stream;
@@ -21,7 +21,7 @@ async fn main() {
     ]);
 
     let (mut i32_stream, mut f64_stream, mut str_stream) =
-        demux_with_error_handler!(MyEnum::A, MyEnum::B, MyEnum::C)
+        demux!(MyEnum::A, MyEnum::B, MyEnum::C)
             (Box::new(|error| async move { panic!("{}", error); }.boxed()))
             (stream.boxed());
 

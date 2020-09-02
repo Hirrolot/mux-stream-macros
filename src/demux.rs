@@ -10,8 +10,10 @@ use syn::{
     Path, Token,
 };
 
+type VariantPath = Path;
+
 struct Demux {
-    pub variants: Punctuated<Path, Token![,]>,
+    pub variants: Punctuated<VariantPath, Token![,]>,
 }
 
 impl Parse for Demux {
@@ -22,7 +24,7 @@ impl Parse for Demux {
     }
 }
 
-pub fn gen_with_error_handler(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let demux = parse_macro_input!(input as Demux);
 
     if demux.variants.is_empty() {

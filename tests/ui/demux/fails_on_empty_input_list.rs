@@ -1,5 +1,5 @@
-use mux_stream_macros::demux_with_error_handler;
+use mux_stream_macros::demux;
 
 fn main() {
-    demux_with_error_handler!();
+    demux!();
 }

@@ -12,11 +12,11 @@ use common::ConcatTokenStreams;
 use proc_macro::TokenStream;
 
 #[proc_macro]
-pub fn mux_with_error_handler(input: TokenStream) -> TokenStream {
+pub fn mux(input: TokenStream) -> TokenStream {
     mux::gen(input)
 }
 
 #[proc_macro]
-pub fn demux_with_error_handler(input: TokenStream) -> TokenStream {
-    demux::gen_with_error_handler(input)
+pub fn demux(input: TokenStream) -> TokenStream {
+    demux::gen(input)
 }

@@ -1,4 +1,4 @@
-use mux_stream_macros::mux_with_error_handler;
+use mux_stream_macros::mux;
 
 use std::{collections::HashSet, iter::FromIterator};
 
@@ -18,7 +18,7 @@ async fn main() {
     let u8_values = HashSet::from_iter(vec![88]);
     let str_values = HashSet::from_iter(vec!["Hello", "ABC"]);
 
-    let result: UnboundedReceiver<MyEnum> = mux_with_error_handler!(MyEnum::A, MyEnum::B, MyEnum::C)
+    let result: UnboundedReceiver<MyEnum> = mux!(MyEnum::A, MyEnum::B, MyEnum::C)
         (Box::new(|error| async move { panic!("{}", error); }.boxed()))(
         stream::iter(i32_values.clone()).boxed(),
         stream::iter(u8_values.clone()).boxed(),
