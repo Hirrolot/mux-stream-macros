@@ -1,5 +1,5 @@
-use mux_stream_macros::mux;
+use mux_stream_macros::mux_with_error_handler;
 
 fn main() {
-    mux!();
+    mux_with_error_handler!();
 }

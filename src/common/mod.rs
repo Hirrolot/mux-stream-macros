@@ -15,10 +15,4 @@ pub mod private_macros {
             quote::format_ident!("rx_{}", $i)
         };
     }
-
-    macro_rules! input_stream {
-        ($i:expr) => {
-            quote::format_ident!("input_stream_{}", $i)
-        };
-    }
 }
