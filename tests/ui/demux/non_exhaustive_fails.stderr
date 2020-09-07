@@ -1,0 +1,17 @@
+error[E0004]: non-exhaustive patterns: `B(_)` not covered
+  --> $DIR/non_exhaustive_fails.rs:24:9
+   |
+7  | / enum MyEnum {
+8  | |     A(i32),
+9  | |     B(f64),
+   | |     - not covered
+10 | |     C(&'static str),
+11 | | }
+   | |_- `MyEnum` defined here
+...
+24 |           demux!(MyEnum::A, /* MyEnum::B, */ MyEnum::C)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ pattern `B(_)` not covered
+   |
+   = help: ensure that all possible cases are being handled, possibly by adding wildcards or more match arms
+   = note: the matched value is of type `MyEnum`
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)

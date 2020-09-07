@@ -14,13 +14,15 @@ type VariantPath = Path;
 
 struct Demux {
     pub variants: Punctuated<VariantPath, Token![,]>,
+    pub rest: Option<Token![..]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let variants = Punctuated::parse_terminated(input)?;
+        let rest = input.parse()?;
 
-        Ok(Self { variants })
+        Ok(Self { variants, rest })
     }
 }
 
@@ -69,6 +71,15 @@ fn dispatch(demux: &Demux) -> TokenStream {
     let cloned_senders = cloned_senders(demux.variants.len());
     let dispatcher_arms = dispatcher_arms(&demux);
 
+    let rest = match demux.rest {
+        Some(_) => {
+            quote! { _ => {}, }
+        }
+        None => {
+            quote! {}
+        }
+    };
+
     quote! {
         tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
             #cloned_senders
@@ -77,6 +88,7 @@ fn dispatch(demux: &Demux) -> TokenStream {
             async move {
                 match update {
                     #dispatcher_arms
+                    #rest
                 }
             }
         }));
