@@ -1,4 +1,4 @@
-use super::ConcatTokenStreams;
+use super::common::ConcatTokenStreams;
 
 use proc_macro2::TokenStream;
 use quote::quote;

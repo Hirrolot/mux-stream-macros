@@ -7,8 +7,6 @@ mod common;
 mod demux;
 mod mux;
 
-use common::ConcatTokenStreams;
-
 use proc_macro::TokenStream;
 
 #[proc_macro]
