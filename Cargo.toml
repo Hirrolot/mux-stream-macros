@@ -3,7 +3,6 @@ name = "mux-stream-macros"
 version = "0.1.0"
 authors = ["Temirkhan Myrzamadi <hirrolot@gmail.com>"]
 edition = "2018"
-description = "(De)multiplexing for Rusty streams"
 repository = "https://github.com/Hirrolot/mux-stream-macros"
 documentation = "https://docs.rs/mux-stream-macros/"
 license = "MIT"
