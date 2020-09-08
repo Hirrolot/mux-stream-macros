@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
     parse,
-    parse::{Parse, ParseStream},
+    parse::{Parse, ParseBuffer, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
     Path, Token,
@@ -13,26 +13,75 @@ use syn::{
 type VariantPath = Path;
 
 struct Demux {
-    pub variants: Punctuated<VariantPath, Token![,]>,
+    pub variants: Vec<VariantPath>,
     pub rest: Option<Token![..]>,
 }
 
 impl Parse for Demux {
+    // TODO: refactor this function.
     fn parse(input: ParseStream) -> parse::Result<Self> {
-        let variants = Punctuated::parse_terminated(input)?;
-        let rest = input.parse()?;
+        #[derive(Clone)]
+        enum InputItem {
+            Path(VariantPath),
+            PathAndDot2(VariantPath, Token![..]),
+            Dot2(Token![..]),
+        }
 
-        Ok(Self { variants, rest })
+        impl Parse for InputItem {
+            fn parse(input: &ParseBuffer) -> parse::Result<Self> {
+                match input.parse() {
+                    Ok(path) => match input.parse() {
+                        Ok(dot2) => Ok(Self::PathAndDot2(path, dot2)),
+                        Err(_) => Ok(Self::Path(path)),
+                    },
+                    Err(_) => Ok(Self::Dot2(input.parse()?)),
+                }
+            }
+        }
+
+        let items: Punctuated<InputItem, Token![,]> = Punctuated::parse_terminated(input)?;
+        let trailing_comma_presented = items.trailing_punct();
+        let items = items.into_iter().collect::<Vec<InputItem>>();
+
+        let last = if items.is_empty() {
+            return Err(input.error("At least one variant is required"));
+        } else {
+            let last = items[items.len() - 1].clone();
+
+            if matches!(last, InputItem::PathAndDot2(_, _) | InputItem::Dot2(_))
+                && trailing_comma_presented
+            {
+                return Err(input.error("A comma after .. is forbidden"));
+            }
+
+            last
+        };
+
+        let mut variants = Vec::new();
+        let items_len = items.len() - 1;
+        for item in items.into_iter().take(items_len) {
+            match item {
+                InputItem::Path(path) => variants.push(path),
+                _ => return Err(input.error(".. must be at the end")),
+            }
+        }
+
+        match last {
+            InputItem::Path(path) => {
+                variants.push(path);
+                Ok(Self { variants, rest: None })
+            }
+            InputItem::PathAndDot2(path, dot2) => {
+                variants.push(path);
+                Ok(Self { variants, rest: Some(dot2) })
+            }
+            InputItem::Dot2(dot2) => Ok(Self { variants, rest: Some(dot2) }),
+        }
     }
 }
 
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let demux = parse_macro_input!(input as Demux);
-
-    if demux.variants.is_empty() {
-        let expected = quote! { compile_error!("At least one variant is required") };
-        return expected.into();
-    }
 
     let channels = channels(demux.variants.len());
     let dispatch = dispatch(&demux);
