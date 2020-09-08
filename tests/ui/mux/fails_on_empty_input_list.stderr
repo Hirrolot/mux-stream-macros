@@ -1,4 +1,4 @@
-error: At least one variant is required
+error: unexpected end of input, At least one variant is required
  --> $DIR/fails_on_empty_input_list.rs:4:5
   |
 4 |     mux!();

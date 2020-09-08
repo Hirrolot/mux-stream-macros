@@ -27,17 +27,16 @@ impl Parse for Mux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let variants = Punctuated::parse_terminated(input)?;
 
+        if variants.is_empty() {
+            return Err(input.error("At least one variant is required"));
+        }
+
         Ok(Self { variants })
     }
 }
 
 pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mux = parse_macro_input!(input as Mux);
-
-    if mux.variants.is_empty() {
-        let expected = quote! { compile_error!("At least one variant is required") };
-        return expected.into();
-    }
 
     let input_streams = input_streams_params(mux.variants.len());
     let channels = channels(mux.variants.len());

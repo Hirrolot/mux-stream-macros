@@ -21,7 +21,7 @@ async fn main() {
     ]);
 
     let (mut i32_stream, mut str_stream) =
-        demux!(MyEnum::A, /* MyEnum::B, */ MyEnum::C, ..)
+        demux!(.. MyEnum::A, /* MyEnum::B, */ MyEnum::C)
             (Box::new(|error| async move { panic!("{}", error); }.boxed()))
             (stream.boxed());
 
