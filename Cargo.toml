@@ -6,8 +6,6 @@ edition = "2018"
 repository = "https://github.com/Hirrolot/mux-stream-macros"
 documentation = "https://docs.rs/mux-stream-macros/"
 license = "MIT"
-categories = ["Asynchronous", "Rust patterns"]
-keywords = ["async", "futures", "tokio", "multiplex", "demultiplex"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
