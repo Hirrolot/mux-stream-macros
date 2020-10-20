@@ -26,12 +26,12 @@ async fn main() {
     // We don't touch _i32_stream_skipped, but nonetheless, other streams work as
     // expected.
     let (mut _i32_stream_skipped, mut f64_stream, mut str_stream) =
-        demux!(MyEnum::A, MyEnum::B, MyEnum::C)(Box::new(|error| {
+        demux!(MyEnum::A, MyEnum::B, MyEnum::C)(stream.boxed(), Box::new(|error| {
             async move {
                 panic!("{}", error);
             }
             .boxed()
-        }))(stream.boxed());
+        }));
 
     assert_eq!(f64_stream.next().await, Some(24.241));
     assert_eq!(f64_stream.next().await, None);

@@ -43,13 +43,12 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let dispatch = dispatch(&mux);
 
     let expanded = quote! {
-        (|error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>) -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
-            |#input_streams| {
-                let error_handler = std::sync::Arc::new(error_handler);
-                #channels
-                #dispatch
-                rx
-            }
+        (|#input_streams error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>)
+            -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
+            let error_handler = std::sync::Arc::new(error_handler);
+            #channels
+            #dispatch
+            rx
         })
     };
     expanded.into()

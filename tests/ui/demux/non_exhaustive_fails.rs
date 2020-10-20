@@ -22,8 +22,7 @@ async fn main() {
 
     let (mut i32_stream, mut str_stream) =
         demux!(MyEnum::A, /* MyEnum::B, */ MyEnum::C)
-            (Box::new(|error| async move { panic!("{}", error); }.boxed()))
-            (stream.boxed());
+            (stream.boxed(), Box::new(|error| async move { panic!("{}", error); }.boxed()));
 
     assert_eq!(i32_stream.next().await, Some(123));
     assert_eq!(i32_stream.next().await, Some(811));

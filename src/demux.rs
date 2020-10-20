@@ -40,13 +40,13 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // The formal arguments are boxed owing to the weak type deduction:
     // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=443698f46d4e1e4ef313b6bb200149d4.
     let expanded = quote! {
-        (|error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>) -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
-            |input_stream: futures::stream::BoxStream<'static, _>| {
-                let error_handler = std::sync::Arc::new(error_handler);
-                #channels
-                #dispatch
-                #output_streams
-            }
+        (|input_stream: futures::stream::BoxStream<'static, _>,
+            error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>)
+                -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
+            let error_handler = std::sync::Arc::new(error_handler);
+            #channels
+            #dispatch
+            #output_streams
         })
     };
     expanded.into()

@@ -18,11 +18,11 @@ async fn main() {
     let u8_values = HashSet::from_iter(vec![88]);
     let str_values = HashSet::from_iter(vec!["Hello", "ABC"]);
 
-    let result: UnboundedReceiver<MyEnum> = mux!(MyEnum::A, MyEnum::B, MyEnum::C)
-        (Box::new(|error| async move { panic!("{}", error); }.boxed()))(
+    let result: UnboundedReceiver<MyEnum> = mux!(MyEnum::A, MyEnum::B, MyEnum::C)(
         stream::iter(i32_values.clone()).boxed(),
         stream::iter(u8_values.clone()).boxed(),
         stream::iter(str_values.clone()).boxed(),
+        Box::new(|error| async move { panic!("{}", error); }.boxed())
     );
 
     let (i32_results, u8_results, str_results) = result
