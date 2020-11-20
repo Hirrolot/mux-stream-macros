@@ -37,8 +37,6 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let dispatch = dispatch(&demux);
     let output_streams = output_streams(demux.variants.len());
 
-    // The formal arguments are boxed owing to the weak type deduction:
-    // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=443698f46d4e1e4ef313b6bb200149d4.
     let expanded = quote! {
         (|input_stream, error_handler| {
             let error_handler = std::sync::Arc::new(error_handler);
