@@ -9,8 +9,8 @@ error[E0004]: non-exhaustive patterns: `B(_)` not covered
 11 | | }
    | |_- `MyEnum` defined here
 ...
-24 |           demux!(MyEnum::A, /* MyEnum::B, */ MyEnum::C)
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ pattern `B(_)` not covered
+24 |           demux!(MyEnum { A, /* B, */ C})
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ pattern `B(_)` not covered
    |
    = help: ensure that all possible cases are being handled, possibly by adding wildcards or more match arms
    = note: the matched value is of type `MyEnum`

@@ -1,53 +1,71 @@
 error: expected identifier
- --> $DIR/rest_pattern_fails.rs:4:15
+ --> $DIR/rest_pattern_fails.rs:4:24
   |
-4 |     demux!(A, .., B, C);
-  |               ^^
+4 |     demux!(MyEnum { A, .., B, C });
+  |                        ^^
 
 error: expected identifier
- --> $DIR/rest_pattern_fails.rs:5:20
+ --> $DIR/rest_pattern_fails.rs:5:30
   |
-5 |     demux!(A, B, C,, ..);
-  |                    ^
+5 |     demux!(MyEnum { A, B, C, .. });
+  |                              ^^
 
 error: expected identifier
- --> $DIR/rest_pattern_fails.rs:6:14
+ --> $DIR/rest_pattern_fails.rs:6:21
   |
-6 |     demux!(.., A, B, C);
-  |              ^
-
-error: expected identifier
- --> $DIR/rest_pattern_fails.rs:8:21
-  |
-8 |     demux!(A, B, C, ..);
+6 |     demux!(MyEnum { .., A, B, C });
   |                     ^^
+
+error: expected identifier
+ --> $DIR/rest_pattern_fails.rs:8:30
+  |
+8 |     demux!(MyEnum { A, B, C, .. });
+  |                              ^^
 
 error: expected `,`
- --> $DIR/rest_pattern_fails.rs:9:21
+ --> $DIR/rest_pattern_fails.rs:9:30
   |
-9 |     demux!(A, B, C  ..);
-  |                     ^^
+9 |     demux!(MyEnum { A, B, C  .. });
+  |                              ^^
 
 error: expected identifier
-  --> $DIR/rest_pattern_fails.rs:11:14
+  --> $DIR/rest_pattern_fails.rs:11:21
    |
-11 |     demux!(.., A, B, C, ..);
-   |              ^
+11 |     demux!(MyEnum { .., A, B, C, .. });
+   |                     ^^
 
 error: expected identifier
-  --> $DIR/rest_pattern_fails.rs:12:25
+  --> $DIR/rest_pattern_fails.rs:12:21
    |
-12 |     demux!(..  A, B, C, ..);
-   |                         ^^
+12 |     demux!(MyEnum { ..  A, B, C, .. });
+   |                     ^^
 
 error: expected identifier
-  --> $DIR/rest_pattern_fails.rs:14:15
+  --> $DIR/rest_pattern_fails.rs:14:24
    |
-14 |     demux!(A, ..  B, C, ..);
-   |               ^^
+14 |     demux!(MyEnum { A, ..  B, C, .. });
+   |                        ^^
 
 error: expected identifier
-  --> $DIR/rest_pattern_fails.rs:15:15
+  --> $DIR/rest_pattern_fails.rs:15:24
    |
-15 |     demux!(A, .., B, C, ..);
-   |               ^^
+15 |     demux!(MyEnum { A, .., B, C, .. });
+   |                        ^^
+
+error: expected identifier
+  --> $DIR/rest_pattern_fails.rs:17:21
+   |
+17 |     demux!(MyEnum { .. A, B, C });
+   |                     ^^
+
+error: expected curly braces
+  --> $DIR/rest_pattern_fails.rs:18:19
+   |
+18 |     demux!(MyEnum .. { A, B, C });
+   |                   ^^
+
+error: unexpected token
+  --> $DIR/rest_pattern_fails.rs:19:31
+   |
+19 |     demux!(MyEnum { A, B, C } ..);
+   |                               ^^

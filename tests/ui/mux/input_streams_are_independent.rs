@@ -32,7 +32,7 @@ impl Stream for InfStream {
 #[tokio::main]
 async fn main() {
     let mut result: UnboundedReceiver<MyEnum> =
-        mux!(MyEnum::A, MyEnum::B, MyEnum::C)(
+        mux!(MyEnum { A, B, C })(
             InfStream.boxed(),
             stream::iter(vec![88, 25, 66, 11, 6, 0, 90]).boxed(),
             stream::iter(vec!["Hello", "ABC", "bla-bla-bla", "badam"]).boxed(),

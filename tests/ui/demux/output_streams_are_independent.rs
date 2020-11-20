@@ -3,7 +3,7 @@
 
 use mux_stream_macros::demux;
 
-use futures::{FutureExt, StreamExt};
+use futures::StreamExt;
 use tokio::stream;
 
 #[derive(Debug)]
@@ -26,11 +26,10 @@ async fn main() {
     // We don't touch _i32_stream_skipped, but nonetheless, other streams work as
     // expected.
     let (mut _i32_stream_skipped, mut f64_stream, mut str_stream) =
-        demux!(MyEnum::A, MyEnum::B, MyEnum::C)(stream.boxed(), Box::new(|error| {
-            async move {
+        demux!(MyEnum { A, B, C })(stream.boxed(), Box::new(|error| {
+            Box::pin(async move {
                 panic!("{}", error);
-            }
-            .boxed()
+            })
         }));
 
     assert_eq!(f64_stream.next().await, Some(24.241));

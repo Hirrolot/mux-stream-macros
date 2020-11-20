@@ -4,10 +4,11 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use std::iter;
 use syn::{
+    braced,
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Path, Token,
+    token, Ident, Token,
 };
 
 #[macro_use]
@@ -17,21 +18,27 @@ macro_rules! input_stream {
     };
 }
 
-type VariantPath = Path;
+type VariantName = Ident;
 
 struct Mux {
-    variants: Punctuated<VariantPath, Token![,]>,
+    enum_name: Ident,
+    #[allow(dead_code)]
+    brace_token: token::Brace,
+    variants: Punctuated<VariantName, Token![,]>,
 }
 
 impl Parse for Mux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
-        let variants = Punctuated::parse_terminated(input)?;
+        let content;
+        let enum_name = input.parse()?;
+        let brace_token = braced!(content in input);
+        let variants = Punctuated::parse_terminated(&content)?;
 
         if variants.is_empty() {
             return Err(input.error("At least one variant is required"));
         }
 
-        Ok(Self { variants })
+        Ok(Self { enum_name, brace_token, variants })
     }
 }
 
@@ -91,13 +98,14 @@ fn dispatch(mux: &Mux) -> TokenStream {
     }
 }
 
-fn redirections(mux: &Mux) -> TokenStream {
-    mux.variants
+fn redirections(Mux { enum_name, variants, .. }: &Mux) -> TokenStream {
+    variants
         .iter()
         .enumerate()
         .map(|(i, destination_variant)| {
             let tx = tx!(i);
             let input_stream = input_stream!(i);
+            let destination_variant = quote! { #enum_name::#destination_variant };
 
             quote! {{
                 let error_handler = std::sync::Arc::clone(&error_handler);

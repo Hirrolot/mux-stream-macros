@@ -3,30 +3,36 @@ use super::common::ConcatTokenStreams;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
-    parse,
+    braced, parse,
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Path, Token,
+    token, Ident, Token,
 };
 
-type VariantPath = Path;
+type VariantName = Ident;
 
 struct Demux {
-    pub rest: Option<Token![..]>,
-    pub variants: Punctuated<VariantPath, Token![,]>,
+    rest: Option<Token![..]>,
+    enum_name: Ident,
+    #[allow(dead_code)]
+    brace_token: token::Brace,
+    variants: Punctuated<VariantName, Token![,]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
+        let content;
         let rest = input.parse()?;
-        let variants = Punctuated::parse_terminated(input)?;
+        let enum_name = input.parse()?;
+        let brace_token = braced!(content in input);
+        let variants = Punctuated::parse_terminated(&content)?;
 
         if variants.is_empty() {
             return Err(input.error("At least one variant is required"));
         }
 
-        Ok(Self { rest, variants })
+        Ok(Self { rest, enum_name, brace_token, variants })
     }
 }
 
@@ -109,12 +115,13 @@ fn cloned_senders(count: usize) -> TokenStream {
         .concat_token_streams()
 }
 
-fn dispatcher_arms(Demux { variants, .. }: &Demux) -> TokenStream {
+fn dispatcher_arms(Demux { enum_name, variants, .. }: &Demux) -> TokenStream {
     variants
         .iter()
         .enumerate()
         .map(|(i, variant)| {
             let tx = tx!(i);
+            let variant = quote! { #enum_name::#variant };
 
             quote! {
                 #variant (update) => if let Err(error) = #tx.send(update) {

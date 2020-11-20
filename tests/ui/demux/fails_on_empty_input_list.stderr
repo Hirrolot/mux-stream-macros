@@ -1,7 +1,15 @@
-error: unexpected end of input, At least one variant is required
+error: unexpected end of input, expected identifier
  --> $DIR/fails_on_empty_input_list.rs:4:5
   |
 4 |     demux!();
   |     ^^^^^^^^^
+  |
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unexpected end of input, At least one variant is required
+ --> $DIR/fails_on_empty_input_list.rs:5:5
+  |
+5 |     demux!(MyEnum {});
+  |     ^^^^^^^^^^^^^^^^^^
   |
   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
