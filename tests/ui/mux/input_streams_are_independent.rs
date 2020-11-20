@@ -33,9 +33,9 @@ impl Stream for InfStream {
 async fn main() {
     let mut result: UnboundedReceiver<MyEnum> =
         mux!(MyEnum { A, B, C })(
-            InfStream.boxed(),
-            stream::iter(vec![88, 25, 66, 11, 6, 0, 90]).boxed(),
-            stream::iter(vec!["Hello", "ABC", "bla-bla-bla", "badam"]).boxed(),
+            InfStream,
+            stream::iter(vec![88, 25, 66, 11, 6, 0, 90]),
+            stream::iter(vec!["Hello", "ABC", "bla-bla-bla", "badam"]),
             Box::new(|error| {
                 Box::pin(async move {
                     panic!("{}", error);

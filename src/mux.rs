@@ -67,7 +67,7 @@ fn input_streams_params(arms_count: usize) -> TokenStream {
             let input_stream = input_stream!(i);
 
             quote! {
-                #input_stream: futures::stream::BoxStream<'static, _>,
+                #input_stream,
             }
         })
         .concat_token_streams()
