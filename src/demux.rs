@@ -66,14 +66,7 @@ fn dispatch(demux: &Demux) -> TokenStream {
     let cloned_senders = cloned_senders(demux.variants.len());
     let dispatcher_arms = dispatcher_arms(&demux);
 
-    let rest = match demux.rest {
-        Some(_) => {
-            quote! { _ => {}, }
-        }
-        None => {
-            quote! {}
-        }
-    };
+    let rest = demux.rest.map(|_| quote! { _ => {}, });
 
     quote! {
         tokio::spawn(futures::StreamExt::for_each(input_stream, move |update| {
