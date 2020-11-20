@@ -38,7 +38,7 @@ pub fn gen(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let output_streams = output_streams(demux.variants.len());
 
     let expanded = quote! {
-        (|input_stream, error_handler| {
+        (|input_stream, error_handler: Box<dyn Fn(tokio::sync::mpsc::error::SendError<_>) -> futures::future::BoxFuture<'static, ()> + Send + Sync + 'static>| {
             let error_handler = std::sync::Arc::new(error_handler);
             #channels
             #dispatch

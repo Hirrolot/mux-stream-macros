@@ -9,7 +9,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures::{FutureExt, Stream, StreamExt};
+use futures::{Stream, StreamExt};
 use tokio::{stream, sync::mpsc::UnboundedReceiver};
 
 #[derive(Debug)]
@@ -37,9 +37,9 @@ async fn main() {
             stream::iter(vec![88, 25, 66, 11, 6, 0, 90]).boxed(),
             stream::iter(vec!["Hello", "ABC", "bla-bla-bla", "badam"]).boxed(),
             Box::new(|error| {
-                async move {
+                Box::pin(async move {
                     panic!("{}", error);
-                }.boxed()
+                })
             })
         );
 

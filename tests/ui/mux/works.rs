@@ -2,7 +2,7 @@ use mux_stream_macros::mux;
 
 use std::{collections::HashSet, iter::FromIterator};
 
-use futures::{FutureExt, StreamExt};
+use futures::{StreamExt};
 use tokio::{stream, sync::mpsc::UnboundedReceiver};
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ async fn main() {
         stream::iter(i32_values.clone()).boxed(),
         stream::iter(u8_values.clone()).boxed(),
         stream::iter(str_values.clone()).boxed(),
-        Box::new(|error| async move { panic!("{}", error); }.boxed())
+        Box::new(|error| Box::pin(async move { panic!("{}", error); }))
     );
 
     let (i32_results, u8_results, str_results) = result
