@@ -64,8 +64,8 @@ error: expected curly braces
 18 |     demux!(MyEnum .. { A, B, C });
    |                   ^^
 
-error: unexpected token
-  --> $DIR/rest_pattern_fails.rs:19:31
+error: expected identifier
+  --> $DIR/rest_pattern_fails.rs:19:12
    |
-19 |     demux!(MyEnum { A, B, C } ..);
-   |                               ^^
+19 |     demux!(.. MyEnum { A, B, C });
+   |            ^^

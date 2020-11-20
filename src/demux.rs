@@ -13,26 +13,26 @@ use syn::{
 type VariantName = Ident;
 
 struct Demux {
-    rest: Option<Token![..]>,
     enum_name: Ident,
     #[allow(dead_code)]
     brace_token: token::Brace,
     variants: Punctuated<VariantName, Token![,]>,
+    rest: Option<Token![..]>,
 }
 
 impl Parse for Demux {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let content;
-        let rest = input.parse()?;
         let enum_name = input.parse()?;
         let brace_token = braced!(content in input);
         let variants = Punctuated::parse_terminated(&content)?;
+        let rest = input.parse()?;
 
         if variants.is_empty() {
             return Err(input.error("At least one variant is required"));
         }
 
-        Ok(Self { rest, enum_name, brace_token, variants })
+        Ok(Self { enum_name, brace_token, variants, rest })
     }
 }
 
