@@ -7,13 +7,13 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    token, Ident, Token,
+    token, Ident, Path, Token,
 };
 
 type VariantName = Ident;
 
 struct Demux {
-    enum_name: Ident,
+    enum_name: Path,
     #[allow(dead_code)]
     brace_token: token::Brace,
     variants: Punctuated<VariantName, Token![,]>,

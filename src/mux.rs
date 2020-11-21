@@ -8,7 +8,7 @@ use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    token, Ident, Token,
+    token, Ident, Path, Token,
 };
 
 #[macro_use]
@@ -21,7 +21,7 @@ macro_rules! input_stream {
 type VariantName = Ident;
 
 struct Mux {
-    enum_name: Ident,
+    enum_name: Path,
     #[allow(dead_code)]
     brace_token: token::Brace,
     variants: Punctuated<VariantName, Token![,]>,
