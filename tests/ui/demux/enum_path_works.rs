@@ -1,7 +1,5 @@
 use mux_stream_macros::demux;
 
-use tokio::stream;
-
 mod abc {
     pub mod def {
         #[derive(Debug)]
@@ -15,7 +13,7 @@ mod abc {
 
 #[tokio::main]
 async fn main() {
-    let stream = stream::iter(vec![
+    let stream = tokio_stream::iter(vec![
         abc::def::MyEnum::A(123),
         abc::def::MyEnum::B(24.241),
         abc::def::MyEnum::C("Hello"),

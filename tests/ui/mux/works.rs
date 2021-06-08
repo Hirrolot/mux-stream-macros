@@ -3,7 +3,8 @@ use mux_stream_macros::mux;
 use std::{collections::HashSet, iter::FromIterator};
 
 use futures::{StreamExt};
-use tokio::{stream, sync::mpsc::UnboundedReceiver};
+use tokio::sync::mpsc::UnboundedReceiver;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 #[derive(Debug)]
 enum MyEnum {
@@ -19,13 +20,13 @@ async fn main() {
     let str_values = HashSet::from_iter(vec!["Hello", "ABC"]);
 
     let result: UnboundedReceiver<MyEnum> = mux!(MyEnum { A, B, C })(
-        stream::iter(i32_values.clone()),
-        stream::iter(u8_values.clone()),
-        stream::iter(str_values.clone()),
+        tokio_stream::iter(i32_values.clone()),
+        tokio_stream::iter(u8_values.clone()),
+        tokio_stream::iter(str_values.clone()),
         Box::new(|error| Box::pin(async move { panic!("{}", error); }))
     );
 
-    let (i32_results, u8_results, str_results) = result
+    let (i32_results, u8_results, str_results) = UnboundedReceiverStream::new(result)
         .fold(
             (HashSet::new(), HashSet::new(), HashSet::new()),
             |(mut i32_results, mut u8_results, mut str_results), update| async move {

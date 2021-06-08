@@ -1,7 +1,7 @@
 use mux_stream_macros::demux;
 
-use futures::{StreamExt};
-use tokio::stream;
+use futures::StreamExt;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 #[derive(Debug)]
 enum MyEnum {
@@ -12,7 +12,7 @@ enum MyEnum {
 
 #[tokio::main]
 async fn main() {
-    let stream = stream::iter(vec![
+    let stream = tokio_stream::iter(vec![
         MyEnum::A(123),
         MyEnum::B(24.241),
         MyEnum::C("Hello"),
@@ -20,9 +20,12 @@ async fn main() {
         MyEnum::A(811),
     ]);
 
-    let (mut i32_stream, mut str_stream) =
+    let (i32_stream, str_stream) =
         demux!(MyEnum { A, /* B, */ C})
             (stream, Box::new(|error| Box::pin(async move { panic!("{}", error); })));
+
+    let mut i32_stream = UnboundedReceiverStream::new(i32_stream);
+    let mut str_stream = UnboundedReceiverStream::new(str_stream);
 
     assert_eq!(i32_stream.next().await, Some(123));
     assert_eq!(i32_stream.next().await, Some(811));

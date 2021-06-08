@@ -10,7 +10,8 @@ use std::{
 };
 
 use futures::{Stream, StreamExt};
-use tokio::{stream, sync::mpsc::UnboundedReceiver};
+use tokio::sync::mpsc::UnboundedReceiver;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 #[derive(Debug)]
 enum MyEnum {
@@ -31,17 +32,19 @@ impl Stream for InfStream {
 
 #[tokio::main]
 async fn main() {
-    let mut result: UnboundedReceiver<MyEnum> =
+    let result: UnboundedReceiver<MyEnum> =
         mux!(MyEnum { A, B, C })(
             InfStream,
-            stream::iter(vec![88, 25, 66, 11, 6, 0, 90]),
-            stream::iter(vec!["Hello", "ABC", "bla-bla-bla", "badam"]),
+            tokio_stream::iter(vec![88, 25, 66, 11, 6, 0, 90]),
+            tokio_stream::iter(vec!["Hello", "ABC", "bla-bla-bla", "badam"]),
             Box::new(|error| {
                 Box::pin(async move {
                     panic!("{}", error);
                 })
             })
         );
+
+    let mut result = UnboundedReceiverStream::new(result);
 
     // Be sure that the last two streams are completely processed.
     for _ in 0..(7 + 4) {

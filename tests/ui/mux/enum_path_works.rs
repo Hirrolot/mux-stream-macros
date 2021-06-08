@@ -1,7 +1,5 @@
 use mux_stream_macros::mux;
 
-use tokio::stream;
-
 mod abc {
     pub mod def {
         #[derive(Debug)]
@@ -16,9 +14,9 @@ mod abc {
 #[tokio::main]
 async fn main() {
     mux!(abc::def::MyEnum { A, B, C })(
-        stream::iter(vec![123, 811]),
-        stream::iter(vec![88f64]),
-        stream::iter(vec!["Hello", "ABC"]),
+        tokio_stream::iter(vec![123, 811]),
+        tokio_stream::iter(vec![88f64]),
+        tokio_stream::iter(vec!["Hello", "ABC"]),
         Box::new(|_error| Box::pin(async move { }))
     );
 }
